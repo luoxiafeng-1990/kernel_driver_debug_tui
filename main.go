@@ -72,6 +72,25 @@ type DebuggerContext struct {
 	SelectEndY     int
 	// 项目管理
 	Project       *ProjectInfo
+	// 动态布局支持
+	Layout        *DynamicLayout
+}
+
+// 动态布局配置
+type DynamicLayout struct {
+	// 窗口边界位置 (可调整)
+	LeftPanelWidth    int  // 左侧文件浏览器宽度
+	RightPanelWidth   int  // 右侧面板宽度
+	CommandHeight     int  // 命令窗口高度
+	RightPanelSplit1  int  // 右侧面板第一个分割点 (寄存器/变量)
+	RightPanelSplit2  int  // 右侧面板第二个分割点 (变量/堆栈)
+	
+	// 拖拽状态
+	IsDragging        bool
+	DragBoundary      string // "left", "right", "bottom", "right1", "right2"
+	DragStartX        int
+	DragStartY        int
+	DragOriginalValue int
 }
 
 var (
@@ -85,8 +104,222 @@ var (
 	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int
 )
 
+// ========== 动态布局系统 ==========
+
+// 初始化动态布局
+func initDynamicLayout(maxX, maxY int) *DynamicLayout {
+	return &DynamicLayout{
+		LeftPanelWidth:   35,                    // 左侧文件浏览器宽度
+		RightPanelWidth:  35,                    // 右侧面板宽度
+		CommandHeight:    5,                     // 命令窗口高度
+		RightPanelSplit1: maxY / 3,             // 寄存器窗口底部
+		RightPanelSplit2: 2 * maxY / 3,         // 变量窗口底部
+		IsDragging:       false,
+		DragBoundary:     "",
+		DragStartX:       0,
+		DragStartY:       0,
+		DragOriginalValue: 0,
+	}
+}
+
+// 检测鼠标是否在可拖拽边界上
+func detectResizeBoundary(x, y int, layout *DynamicLayout, maxX, maxY int) string {
+	tolerance := 1 // 边界检测容差
+	
+	// 检测左侧边界 (文件浏览器右边)
+	if x >= layout.LeftPanelWidth-tolerance && x <= layout.LeftPanelWidth+tolerance && 
+	   y >= 3 && y <= maxY-layout.CommandHeight {
+		return "left"
+	}
+	
+	// 检测右侧边界 (右侧面板左边)
+	rightStart := maxX - layout.RightPanelWidth
+	if x >= rightStart-tolerance && x <= rightStart+tolerance && 
+	   y >= 3 && y <= maxY-layout.CommandHeight {
+		return "right"
+	}
+	
+	// 检测底部边界 (命令窗口上边)
+	bottomStart := maxY - layout.CommandHeight
+	if y >= bottomStart-tolerance && y <= bottomStart+tolerance && 
+	   x >= 0 && x <= maxX-1 {
+		return "bottom"
+	}
+	
+	// 检测右侧面板内部分割线1 (寄存器/变量)
+	if x >= rightStart && x <= maxX-1 && 
+	   y >= layout.RightPanelSplit1-tolerance && y <= layout.RightPanelSplit1+tolerance {
+		return "right1"
+	}
+	
+	// 检测右侧面板内部分割线2 (变量/堆栈)
+	if x >= rightStart && x <= maxX-1 && 
+	   y >= layout.RightPanelSplit2-tolerance && y <= layout.RightPanelSplit2+tolerance {
+		return "right2"
+	}
+	
+	return ""
+}
+
+// 开始拖拽
+func startDrag(boundary string, x, y int, layout *DynamicLayout) {
+	layout.IsDragging = true
+	layout.DragBoundary = boundary
+	layout.DragStartX = x
+	layout.DragStartY = y
+	
+	// 保存原始值
+	switch boundary {
+	case "left":
+		layout.DragOriginalValue = layout.LeftPanelWidth
+	case "right":
+		layout.DragOriginalValue = layout.RightPanelWidth
+	case "bottom":
+		layout.DragOriginalValue = layout.CommandHeight
+	case "right1":
+		layout.DragOriginalValue = layout.RightPanelSplit1
+	case "right2":
+		layout.DragOriginalValue = layout.RightPanelSplit2
+	}
+}
+
+// 处理拖拽移动
+func handleDragMove(x, y int, layout *DynamicLayout, maxX, maxY int) {
+	if !layout.IsDragging {
+		return
+	}
+	
+	switch layout.DragBoundary {
+	case "left":
+		// 左侧边界：调整文件浏览器宽度
+		newWidth := layout.DragOriginalValue + (x - layout.DragStartX)
+		if newWidth >= 20 && newWidth <= maxX-60 { // 最小20，为代码和右侧面板留60
+			layout.LeftPanelWidth = newWidth
+		}
+		
+	case "right":
+		// 右侧边界：调整右侧面板宽度
+		deltaX := layout.DragStartX - x // 向左拖拽为正
+		newWidth := layout.DragOriginalValue + deltaX
+		if newWidth >= 25 && newWidth <= maxX-40 { // 最小25，为左侧和代码留40
+			layout.RightPanelWidth = newWidth
+		}
+		
+	case "bottom":
+		// 底部边界：调整命令窗口高度
+		deltaY := layout.DragStartY - y // 向上拖拽为正
+		newHeight := layout.DragOriginalValue + deltaY
+		if newHeight >= 3 && newHeight <= maxY/2 { // 最小3行，最大屏幕一半
+			layout.CommandHeight = newHeight
+		}
+		
+	case "right1":
+		// 右侧面板分割线1：调整寄存器窗口高度
+		newSplit := layout.DragOriginalValue + (y - layout.DragStartY)
+		bottomLimit := maxY - layout.CommandHeight - 6 // 为变量和堆栈窗口留空间
+		if newSplit >= 6 && newSplit <= bottomLimit && newSplit < layout.RightPanelSplit2-3 {
+			layout.RightPanelSplit1 = newSplit
+		}
+		
+	case "right2":
+		// 右侧面板分割线2：调整变量窗口高度
+		newSplit := layout.DragOriginalValue + (y - layout.DragStartY)
+		bottomLimit := maxY - layout.CommandHeight - 3 // 为堆栈窗口留空间
+		if newSplit >= layout.RightPanelSplit1+3 && newSplit <= bottomLimit {
+			layout.RightPanelSplit2 = newSplit
+		}
+	}
+}
+
+// 结束拖拽
+func endDrag(layout *DynamicLayout) {
+	layout.IsDragging = false
+	layout.DragBoundary = ""
+}
+
+// 重置布局到默认值
+func resetLayout(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	maxX, maxY := g.Size()
+	globalCtx.Layout = initDynamicLayout(maxX, maxY)
+	
+	return nil
+}
+
+// 键盘调整窗口大小
+func adjustLeftPanelHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil {
+		return nil
+	}
+	
+	maxX, _ := g.Size()
+	newWidth := globalCtx.Layout.LeftPanelWidth + 5
+	if newWidth <= maxX-60 {
+		globalCtx.Layout.LeftPanelWidth = newWidth
+	}
+	
+	return nil
+}
+
+func shrinkLeftPanelHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil {
+		return nil
+	}
+	
+	newWidth := globalCtx.Layout.LeftPanelWidth - 5
+	if newWidth >= 20 {
+		globalCtx.Layout.LeftPanelWidth = newWidth
+	}
+	
+	return nil
+}
+
+func adjustCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil {
+		return nil
+	}
+	
+	_, maxY := g.Size()
+	newHeight := globalCtx.Layout.CommandHeight + 2
+	if newHeight <= maxY/2 {
+		globalCtx.Layout.CommandHeight = newHeight
+	}
+	
+	return nil
+}
+
+func shrinkCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil {
+		return nil
+	}
+	
+	newHeight := globalCtx.Layout.CommandHeight - 2
+	if newHeight >= 3 {
+		globalCtx.Layout.CommandHeight = newHeight
+	}
+	
+	return nil
+}
+
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
+	
+	// 初始化动态布局（如果不存在）
+	if globalCtx != nil && globalCtx.Layout == nil {
+		globalCtx.Layout = initDynamicLayout(maxX, maxY)
+	}
+	
+	// 获取布局参数
+	var layout *DynamicLayout
+	if globalCtx != nil && globalCtx.Layout != nil {
+		layout = globalCtx.Layout
+	} else {
+		// 使用默认布局
+		layout = initDynamicLayout(maxX, maxY)
+	}
 	
 	// 状态栏
 	if v, err := g.SetView("status", 0, 0, maxX-1, 2); err != nil {
@@ -96,8 +329,8 @@ func layout(g *gocui.Gui) error {
 		v.Title = "状态"
 	}
 	
-	// 文件浏览器窗口 (左侧)
-	if v, err := g.SetView("filebrowser", 0, 3, 35, maxY-6); err != nil {
+	// 文件浏览器窗口 (左侧) - 使用动态宽度
+	if v, err := g.SetView("filebrowser", 0, 3, layout.LeftPanelWidth, maxY-layout.CommandHeight-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -106,38 +339,10 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 寄存器窗口 (右上)
-	if v, err := g.SetView("registers", maxX-35, 3, maxX-1, maxY/3); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "寄存器"
-		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-	}
-	
-	// 变量窗口 (右中)
-	if v, err := g.SetView("variables", maxX-35, maxY/3+1, maxX-1, 2*maxY/3); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "变量"
-		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-	}
-	
-	// 调用栈窗口 (右下)
-	if v, err := g.SetView("stack", maxX-35, 2*maxY/3+1, maxX-1, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "函数调用堆栈"
-		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-	}
-	
-	// 代码窗口 (中央) - 修复右边界，为命令窗口留出空间
-	if v, err := g.SetView("code", 36, 3, maxX-36, maxY-6); err != nil {
+	// 代码窗口 (中央) - 动态调整位置和大小
+	codeStartX := layout.LeftPanelWidth + 1
+	codeEndX := maxX - layout.RightPanelWidth - 1
+	if v, err := g.SetView("code", codeStartX, 3, codeEndX, maxY-layout.CommandHeight-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -146,8 +351,42 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 命令窗口 (底部) - 修复布局，确保不与其他窗口重叠
-	if v, err := g.SetView("command", 0, maxY-5, maxX-1, maxY-1); err != nil {
+	// 右侧面板起始位置
+	rightStartX := maxX - layout.RightPanelWidth
+	
+	// 寄存器窗口 (右上) - 使用动态分割点
+	if v, err := g.SetView("registers", rightStartX, 3, maxX-1, layout.RightPanelSplit1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "寄存器"
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+	}
+	
+	// 变量窗口 (右中) - 使用动态分割点
+	if v, err := g.SetView("variables", rightStartX, layout.RightPanelSplit1+1, maxX-1, layout.RightPanelSplit2); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "变量"
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+	}
+	
+	// 调用栈窗口 (右下) - 使用动态分割点
+	if v, err := g.SetView("stack", rightStartX, layout.RightPanelSplit2+1, maxX-1, maxY-layout.CommandHeight-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "函数调用堆栈"
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+	}
+	
+	// 命令窗口 (底部) - 使用动态高度
+	commandStartY := maxY - layout.CommandHeight
+	if v, err := g.SetView("command", 0, commandStartY, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -358,37 +597,54 @@ func updateStatusView(g *gocui.Gui, ctx *DebuggerContext) {
 	if err != nil {
 		return
 	}
+	
 	v.Clear()
-	stateStr := "未知"
-	switch ctx.State {
-	case DEBUG_STOPPED:
-		stateStr = "已停止"
-	case DEBUG_RUNNING:
-		stateStr = "运行中"
-	case DEBUG_STEPPING:
-		stateStr = "单步执行"
-	case DEBUG_BREAKPOINT:
-		stateStr = "断点"
-	}
-	bpfStr := "BPF: ✗"
+	
+	// 显示调试器状态
+	stateStr := "停止"
 	if ctx.BpfLoaded {
-		bpfStr = "BPF: ✓"
+		stateStr = "BPF已加载"
+	}
+	if ctx.Running {
+		stateStr = "运行中"
 	}
 	
-	projectStr := "项目: 未打开"
-	if ctx.Project != nil {
-		projectStr = fmt.Sprintf("项目: %s", filepath.Base(ctx.Project.RootPath))
-		if ctx.Project.CurrentFile != "" {
-			projectStr += fmt.Sprintf(" | 文件: %s", filepath.Base(ctx.Project.CurrentFile))
-		}
-		if len(ctx.Project.Breakpoints) > 0 {
-			projectStr += fmt.Sprintf(" | 断点: %d", len(ctx.Project.Breakpoints))
-		}
-	}
+	// 显示基本状态信息
+	fmt.Fprintf(v, "RISC-V 内核调试器 | 状态: %s | 当前函数: %s | 地址: 0x%X", 
+		stateStr, ctx.CurrentFunc, ctx.CurrentAddr)
 	
-	t := time.Now().Format("15:04:05")
-	fmt.Fprintf(v, " 状态: %s   %s   %s   %s\n",
-		stateStr, bpfStr, projectStr, t)
+	// 显示拖拽状态和提示
+	if ctx.Layout != nil {
+		if ctx.Layout.IsDragging {
+			fmt.Fprintf(v, " | 🔧 正在调整: %s", getBoundaryName(ctx.Layout.DragBoundary))
+		} else {
+			fmt.Fprint(v, " | 💡 提示: 鼠标拖拽窗口边界调整大小, Ctrl+R重置布局")
+		}
+		
+		// 显示当前布局参数
+		fmt.Fprintf(v, " | 布局: L%d R%d C%d", 
+			ctx.Layout.LeftPanelWidth, 
+			ctx.Layout.RightPanelWidth, 
+			ctx.Layout.CommandHeight)
+	}
+}
+
+// 获取边界名称的友好显示
+func getBoundaryName(boundary string) string {
+	switch boundary {
+	case "left":
+		return "左侧边界"
+	case "right":
+		return "右侧边界"
+	case "bottom":
+		return "底部边界"
+	case "right1":
+		return "寄存器/变量分割线"
+	case "right2":
+		return "变量/堆栈分割线"
+	default:
+		return "未知边界"
+	}
 }
 
 // ========== 文件浏览器窗口内容刷新 ==========
@@ -691,17 +947,46 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 		return
 	}
 	
-	// 只有在命令窗口不是当前聚焦窗口时才清空和重新填充内容
-	// 这样可以保持用户正在输入的命令
-	if g.CurrentView() == nil || g.CurrentView().Name() != "command" {
+	// 检查是否是当前聚焦窗口
+	currentView := g.CurrentView()
+	isCurrentView := currentView != nil && currentView.Name() == "command"
+	
+	// 如果命令窗口是当前聚焦窗口，确保显示提示符
+	if isCurrentView {
+		content := strings.TrimSpace(v.Buffer())
+		if content == "" || !strings.HasPrefix(content, "> ") {
+			v.Clear()
+			fmt.Fprint(v, "> ")
+			// 设置光标到提示符后面
+			buffer := v.ViewBuffer()
+			lines := strings.Split(buffer, "\n")
+			lastLineIndex := len(lines) - 1
+			if lastLineIndex < 0 {
+				lastLineIndex = 0
+			}
+			v.SetCursor(2, lastLineIndex)
+		}
+	} else {
+		// 如果不是当前聚焦窗口，显示帮助信息
 		v.Clear()
 		
 		fmt.Fprintln(v, "命令窗口 - 按6或点击这里聚焦")
 		fmt.Fprintln(v, "")
+		fmt.Fprintln(v, "可用命令:")
+		fmt.Fprintln(v, "  open <路径>  - 打开项目目录")
+		fmt.Fprintln(v, "  generate     - 生成BPF调试代码")
+		fmt.Fprintln(v, "  clear        - 清除所有断点")
+		fmt.Fprintln(v, "  close        - 关闭当前项目")
+		fmt.Fprintln(v, "  help         - 显示帮助信息")
+		fmt.Fprintln(v, "")
 		fmt.Fprintln(v, "快捷键:")
-		fmt.Fprintln(v, "Tab/`-切换窗口  ↑/↓-滚动  Enter-选择/设置断点")
+		fmt.Fprintln(v, "Tab/`-切换窗口  ↑/↓-滚动  Enter-执行命令")
 		fmt.Fprintln(v, "Space-打开文件  g-生成BPF  c-清除断点  q-退出")
 		fmt.Fprintln(v, "1-文件浏览器 2-寄存器 3-变量 4-断点 5-代码 6-命令")
+		fmt.Fprintln(v, "")
+		fmt.Fprintln(v, "布局调整:")
+		fmt.Fprintln(v, "Ctrl+R-重置布局  Ctrl+L/H-左侧面板  Ctrl+J/K-命令窗口")
+		fmt.Fprintln(v, "鼠标拖拽窗口边界也可调整大小")
 	
 		// 显示鼠标支持状态
 		if ctx.MouseEnabled {
@@ -710,33 +995,15 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 			fmt.Fprintln(v, "鼠标: ✗ 不支持，请使用键盘操作")
 		}
 		
-		// 显示当前焦点
-		currentView := g.CurrentView()
-		if currentView != nil {
-			for i, name := range focusNames {
-				viewNames := []string{"filebrowser", "registers", "variables", "stack", "code", "command"}
-				if i < len(viewNames) && viewNames[i] == currentView.Name() {
-					fmt.Fprintf(v, "当前焦点: %s\n", name)
-					break
-				}
-			}
-		}
-		
 		// 项目状态
 		if ctx.Project == nil {
 			fmt.Fprintln(v, "")
-			fmt.Fprintln(v, "命令示例:")
-			fmt.Fprintln(v, "open ../tacosys_ko  - 打开项目")
-			fmt.Fprintln(v, "open /path/to/project - 打开指定项目")
+			fmt.Fprintln(v, "示例: open ../tacosys_ko")
 		} else {
 			fmt.Fprintln(v, "")
-			fmt.Fprintln(v, "项目命令:")
-			fmt.Fprintln(v, "generate - 生成BPF代码")
-			fmt.Fprintln(v, "clear - 清除所有断点")
-			fmt.Fprintln(v, "close - 关闭项目")
+			fmt.Fprintf(v, "当前项目: %s\n", filepath.Base(ctx.Project.RootPath))
+			fmt.Fprintf(v, "断点数量: %d\n", len(ctx.Project.Breakpoints))
 		}
-		
-		fmt.Fprintln(v, "\n命令: ")
 	}
 }
 
@@ -1077,83 +1344,132 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		return nil
 	}
 	
+	// 移除命令提示符
+	if strings.HasPrefix(content, "> ") {
+		content = strings.TrimSpace(content[2:])
+	}
+	
+	if content == "" {
+		// 如果只有提示符，重新显示
+		v.Clear()
+		fmt.Fprint(v, "> ")
+		v.SetCursor(2, 0)
+		return nil
+	}
+	
 	// 解析命令
 	parts := strings.Fields(content)
 	if len(parts) == 0 {
+		v.Clear()
+		fmt.Fprint(v, "> ")
+		v.SetCursor(2, 0)
 		return nil
 	}
 	
 	command := parts[0]
 	
+	// 清空当前内容并显示命令执行结果
+	v.Clear()
+	
 	switch command {
 	case "open":
 		if len(parts) < 2 {
-			v.Clear()
-			fmt.Fprintln(v, "用法: open <项目路径>")
-			return nil
-		}
-		
-		projectPath := parts[1]
-		// 如果是相对路径，转换为绝对路径
-		if !filepath.IsAbs(projectPath) {
-			wd, _ := os.Getwd()
-			projectPath = filepath.Join(wd, projectPath)
-		}
-		
-		project, err := openProject(projectPath)
-		if err != nil {
-			v.Clear()
-			fmt.Fprintf(v, "打开项目失败: %v\n", err)
+			fmt.Fprintln(v, "错误: 用法: open <项目路径>")
 		} else {
-			globalCtx.Project = project
-			v.Clear()
-			fmt.Fprintf(v, "成功打开项目: %s\n", filepath.Base(projectPath))
+			projectPath := parts[1]
+			// 如果是相对路径，转换为绝对路径
+			if !filepath.IsAbs(projectPath) {
+				wd, _ := os.Getwd()
+				projectPath = filepath.Join(wd, projectPath)
+			}
+			
+			project, err := openProject(projectPath)
+			if err != nil {
+				fmt.Fprintf(v, "错误: 打开项目失败: %v\n", err)
+			} else {
+				globalCtx.Project = project
+				fmt.Fprintf(v, "成功打开项目: %s\n", filepath.Base(projectPath))
+				fmt.Fprintf(v, "找到 %d 个文件\n", countFiles(project.FileTree))
+			}
 		}
 		
 	case "generate", "g":
 		if globalCtx.Project == nil {
-			v.Clear()
-			fmt.Fprintln(v, "请先打开项目")
-			return nil
-		}
-		
-		err := generateBPF(globalCtx)
-		if err != nil {
-			v.Clear()
-			fmt.Fprintf(v, "生成BPF失败: %v\n", err)
+			fmt.Fprintln(v, "错误: 请先打开项目")
 		} else {
-			v.Clear()
-			fmt.Fprintln(v, "BPF代码生成成功: debug_breakpoints.bpf.c")
-			globalCtx.BpfLoaded = true
+			err := generateBPF(globalCtx)
+			if err != nil {
+				fmt.Fprintf(v, "错误: 生成BPF失败: %v\n", err)
+			} else {
+				fmt.Fprintln(v, "成功: BPF代码生成完成")
+				fmt.Fprintln(v, "文件: debug_breakpoints.bpf.c")
+				globalCtx.BpfLoaded = true
+			}
 		}
 		
 	case "clear", "c":
 		if globalCtx.Project != nil {
+			count := len(globalCtx.Project.Breakpoints)
 			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
-			v.Clear()
-			fmt.Fprintln(v, "已清除所有断点")
+			fmt.Fprintf(v, "成功: 已清除 %d 个断点\n", count)
+		} else {
+			fmt.Fprintln(v, "提示: 没有打开的项目")
 		}
 		
 	case "close":
-		globalCtx.Project = nil
-		v.Clear()
-		fmt.Fprintln(v, "已关闭项目")
+		if globalCtx.Project != nil {
+			projectName := filepath.Base(globalCtx.Project.RootPath)
+			globalCtx.Project = nil
+			fmt.Fprintf(v, "成功: 已关闭项目 %s\n", projectName)
+		} else {
+			fmt.Fprintln(v, "提示: 没有打开的项目")
+		}
 		
 	case "help", "h":
-		v.Clear()
 		fmt.Fprintln(v, "可用命令:")
-		fmt.Fprintln(v, "open <路径> - 打开项目")
-		fmt.Fprintln(v, "generate - 生成BPF代码")
-		fmt.Fprintln(v, "clear - 清除断点")
-		fmt.Fprintln(v, "close - 关闭项目")
+		fmt.Fprintln(v, "  open <路径>  - 打开项目目录")
+		fmt.Fprintln(v, "  generate     - 生成BPF调试代码")
+		fmt.Fprintln(v, "  clear        - 清除所有断点")
+		fmt.Fprintln(v, "  close        - 关闭当前项目")
+		fmt.Fprintln(v, "  help         - 显示此帮助信息")
 		
 	default:
-		v.Clear()
-		fmt.Fprintf(v, "未知命令: %s\n", command)
-		fmt.Fprintln(v, "输入 help 查看可用命令")
+		fmt.Fprintf(v, "错误: 未知命令 '%s'\n", command)
+		fmt.Fprintln(v, "输入 'help' 查看可用命令")
 	}
 	
+	// 显示新的命令提示符
+	fmt.Fprintln(v, "")
+	fmt.Fprint(v, "> ")
+	
+	// 设置光标到提示符后面
+	buffer := v.ViewBuffer()
+	lines := strings.Split(buffer, "\n")
+	lastLineIndex := len(lines) - 1
+	if lastLineIndex < 0 {
+		lastLineIndex = 0
+	}
+	v.SetCursor(2, lastLineIndex)
+	
 	return nil
+}
+
+// 辅助函数：计算文件树中的文件数量
+func countFiles(node *FileNode) int {
+	if node == nil {
+		return 0
+	}
+	
+	count := 0
+	if !node.IsDir {
+		count = 1
+	}
+	
+	for _, child := range node.Children {
+		count += countFiles(child)
+	}
+	
+	return count
 }
 
 // 生成BPF快捷键
@@ -1344,6 +1660,67 @@ func getTextFromLine(v *gocui.View, lineNum, startX, endX int) string {
 	return line[startX:endX]
 }
 
+// ========== 拖拽事件处理 ==========
+
+// 鼠标按下处理 - 检测是否开始拖拽
+func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil {
+		return mouseFocusHandler(g, v) // 回退到普通聚焦处理
+	}
+	
+	// 获取鼠标位置（简化实现，使用视图相对位置）
+	maxX, maxY := g.Size()
+	
+	// 这里需要获取实际的鼠标坐标，但gocui原版没有直接的API
+	// 我们通过检测当前视图和光标位置来模拟
+	if v != nil {
+		ox, oy := v.Origin()
+		cx, cy := v.Cursor()
+		mouseX := ox + cx
+		mouseY := oy + cy
+		
+		// 检测是否在可拖拽边界上
+		boundary := detectResizeBoundary(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
+		if boundary != "" {
+			startDrag(boundary, mouseX, mouseY, globalCtx.Layout)
+			return nil
+		}
+	}
+	
+	// 如果不是拖拽，执行普通的聚焦处理
+	return mouseFocusHandler(g, v)
+}
+
+// 鼠标拖拽处理
+func mouseDragResizeHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Layout == nil || !globalCtx.Layout.IsDragging {
+		return nil
+	}
+	
+	maxX, maxY := g.Size()
+	
+	// 获取当前鼠标位置（简化实现）
+	if v != nil {
+		ox, oy := v.Origin()
+		cx, cy := v.Cursor()
+		mouseX := ox + cx
+		mouseY := oy + cy
+		
+		// 处理拖拽移动
+		handleDragMove(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
+	}
+	
+	return nil
+}
+
+// 鼠标释放处理 - 结束拖拽
+func mouseUpHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx != nil && globalCtx.Layout != nil && globalCtx.Layout.IsDragging {
+		endDrag(globalCtx.Layout)
+	}
+	return nil
+}
+
 func main() {
 	// 创建调试器上下文
 	ctx := &DebuggerContext{
@@ -1448,12 +1825,38 @@ func main() {
 		log.Panicln(err)
 	}
 
+	// 布局调整快捷键
+	// Ctrl+R 重置布局
+	if err := g.SetKeybinding("", gocui.KeyCtrlR, gocui.ModNone, resetLayout); err != nil {
+		log.Panicln(err)
+	}
+	
+	// Ctrl+L 增加左侧面板宽度
+	if err := g.SetKeybinding("", gocui.KeyCtrlL, gocui.ModNone, adjustLeftPanelHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// Ctrl+H 减少左侧面板宽度  
+	if err := g.SetKeybinding("", gocui.KeyCtrlH, gocui.ModNone, shrinkLeftPanelHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// Ctrl+J 增加命令窗口高度
+	if err := g.SetKeybinding("", gocui.KeyCtrlJ, gocui.ModNone, adjustCommandHeightHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// Ctrl+K 减少命令窗口高度
+	if err := g.SetKeybinding("", gocui.KeyCtrlK, gocui.ModNone, shrinkCommandHeightHandler); err != nil {
+		log.Panicln(err)
+	}
+
 	// 鼠标事件绑定
 	viewNames := []string{"filebrowser", "registers", "variables", "stack", "code", "command"}
 	
 	for _, viewName := range viewNames {
 		// 鼠标单击聚焦
-		if err := g.SetKeybinding(viewName, gocui.MouseLeft, gocui.ModNone, mouseFocusHandler); err != nil {
+		if err := g.SetKeybinding(viewName, gocui.MouseLeft, gocui.ModNone, mouseDownHandler); err != nil {
 			log.Panicln(err)
 		}
 		
