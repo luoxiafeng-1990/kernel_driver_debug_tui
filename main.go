@@ -74,6 +74,9 @@ type DebuggerContext struct {
 	Project       *ProjectInfo
 	// 动态布局支持
 	Layout        *DynamicLayout
+	// 命令窗口状态管理
+	CommandOutput string  // 保存命令输出结果
+	CommandMode   string  // "input" 输入模式, "output" 输出模式
 }
 
 // 动态布局配置
@@ -284,7 +287,11 @@ func adjustCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {
 	
 	_, maxY := g.Size()
 	newHeight := globalCtx.Layout.CommandHeight + 2
-	if newHeight <= maxY/2 {
+	
+	// 修复：添加commandStartY的下边界检查
+	// 确保commandStartY >= 4，为状态栏(3行)和其他窗口留出最小空间
+	commandStartY := maxY - newHeight
+	if newHeight <= maxY/2 && commandStartY >= 4 {
 		globalCtx.Layout.CommandHeight = newHeight
 	}
 	
@@ -321,6 +328,28 @@ func layout(g *gocui.Gui) error {
 		layout = initDynamicLayout(maxX, maxY)
 	}
 	
+	// 修复：添加全面的边界检查和约束
+	// 确保CommandHeight不会导致其他窗口坐标异常
+	minCommandHeight := 3
+	maxCommandHeight := maxY - 7  // 为状态栏(3行)和其他窗口(至少4行)留空间
+	if maxCommandHeight < minCommandHeight {
+		maxCommandHeight = minCommandHeight
+	}
+	
+	if layout.CommandHeight < minCommandHeight {
+		layout.CommandHeight = minCommandHeight
+	}
+	if layout.CommandHeight > maxCommandHeight {
+		layout.CommandHeight = maxCommandHeight
+	}
+	
+	// 计算安全的窗口底部坐标
+	safeBottomY := maxY - layout.CommandHeight - 1
+	if safeBottomY < 4 {
+		safeBottomY = 4
+		layout.CommandHeight = maxY - safeBottomY - 1
+	}
+	
 	// 状态栏
 	if v, err := g.SetView("status", 0, 0, maxX-1, 2); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -329,8 +358,8 @@ func layout(g *gocui.Gui) error {
 		v.Title = "状态"
 	}
 	
-	// 文件浏览器窗口 (左侧) - 使用动态宽度
-	if v, err := g.SetView("filebrowser", 0, 3, layout.LeftPanelWidth, maxY-layout.CommandHeight-1); err != nil {
+	// 文件浏览器窗口 (左侧) - 使用安全的底部坐标
+	if v, err := g.SetView("filebrowser", 0, 3, layout.LeftPanelWidth, safeBottomY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -339,10 +368,14 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 代码窗口 (中央) - 动态调整位置和大小
+	// 代码窗口 (中央) - 使用安全的底部坐标
 	codeStartX := layout.LeftPanelWidth + 1
 	codeEndX := maxX - layout.RightPanelWidth - 1
-	if v, err := g.SetView("code", codeStartX, 3, codeEndX, maxY-layout.CommandHeight-1); err != nil {
+	// 确保代码窗口有最小宽度
+	if codeEndX <= codeStartX {
+		codeEndX = codeStartX + 10
+	}
+	if v, err := g.SetView("code", codeStartX, 3, codeEndX, safeBottomY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -354,7 +387,26 @@ func layout(g *gocui.Gui) error {
 	// 右侧面板起始位置
 	rightStartX := maxX - layout.RightPanelWidth
 	
-	// 寄存器窗口 (右上) - 使用动态分割点
+	// 确保右侧分割点在合理范围内
+	minSplit1 := 6
+	maxSplit1 := safeBottomY - 6
+	if layout.RightPanelSplit1 < minSplit1 {
+		layout.RightPanelSplit1 = minSplit1
+	}
+	if layout.RightPanelSplit1 > maxSplit1 {
+		layout.RightPanelSplit1 = maxSplit1
+	}
+	
+	minSplit2 := layout.RightPanelSplit1 + 3
+	maxSplit2 := safeBottomY - 3
+	if layout.RightPanelSplit2 < minSplit2 {
+		layout.RightPanelSplit2 = minSplit2
+	}
+	if layout.RightPanelSplit2 > maxSplit2 {
+		layout.RightPanelSplit2 = maxSplit2
+	}
+	
+	// 寄存器窗口 (右上) - 使用安全的分割点
 	if v, err := g.SetView("registers", rightStartX, 3, maxX-1, layout.RightPanelSplit1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -364,7 +416,7 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 变量窗口 (右中) - 使用动态分割点
+	// 变量窗口 (右中) - 使用安全的分割点
 	if v, err := g.SetView("variables", rightStartX, layout.RightPanelSplit1+1, maxX-1, layout.RightPanelSplit2); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -374,8 +426,8 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 调用栈窗口 (右下) - 使用动态分割点
-	if v, err := g.SetView("stack", rightStartX, layout.RightPanelSplit2+1, maxX-1, maxY-layout.CommandHeight-1); err != nil {
+	// 调用栈窗口 (右下) - 使用安全的底部坐标
+	if v, err := g.SetView("stack", rightStartX, layout.RightPanelSplit2+1, maxX-1, safeBottomY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -384,8 +436,12 @@ func layout(g *gocui.Gui) error {
 		v.SelBgColor = gocui.ColorGreen
 	}
 	
-	// 命令窗口 (底部) - 使用动态高度
-	commandStartY := maxY - layout.CommandHeight
+	// 命令窗口 (底部) - 使用安全的起始坐标
+	commandStartY := safeBottomY + 1
+	if commandStartY >= maxY {
+		commandStartY = maxY - 2
+	}
+	
 	if v, err := g.SetView("command", 0, commandStartY, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -951,23 +1007,27 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 	currentView := g.CurrentView()
 	isCurrentView := currentView != nil && currentView.Name() == "command"
 	
-	// 如果命令窗口是当前聚焦窗口，确保显示提示符
 	if isCurrentView {
-		content := strings.TrimSpace(v.Buffer())
-		if content == "" || !strings.HasPrefix(content, "> ") {
-			v.Clear()
-			fmt.Fprint(v, "> ")
-			// 设置光标到提示符后面
-			buffer := v.ViewBuffer()
-			lines := strings.Split(buffer, "\n")
-			lastLineIndex := len(lines) - 1
-			if lastLineIndex < 0 {
-				lastLineIndex = 0
+		// 如果是聚焦状态，不要清空内容，保持用户输入和命令输出
+		// 只在必要时添加提示符
+		content := v.Buffer()
+		
+		// 如果是输出模式，显示输出结果
+		if ctx.CommandMode == "output" && ctx.CommandOutput != "" {
+			// 保持输出内容不变
+			return
+		}
+		
+		// 如果是输入模式且没有提示符，添加提示符
+		if ctx.CommandMode != "output" && !strings.Contains(content, "> ") {
+			if strings.TrimSpace(content) == "" {
+				v.Clear()
+				fmt.Fprint(v, "> ")
+				v.SetCursor(2, 0)
 			}
-			v.SetCursor(2, lastLineIndex)
 		}
 	} else {
-		// 如果不是当前聚焦窗口，显示帮助信息
+		// 如果不是聚焦状态，显示帮助信息
 		v.Clear()
 		
 		fmt.Fprintln(v, "命令窗口 - 按6或点击这里聚焦")
@@ -1004,6 +1064,10 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 			fmt.Fprintf(v, "当前项目: %s\n", filepath.Base(ctx.Project.RootPath))
 			fmt.Fprintf(v, "断点数量: %d\n", len(ctx.Project.Breakpoints))
 		}
+		
+		// 重置命令模式为输入模式
+		ctx.CommandMode = "input"
+		ctx.CommandOutput = ""
 	}
 }
 
@@ -1368,13 +1432,14 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	
 	command := parts[0]
 	
-	// 清空当前内容并显示命令执行结果
-	v.Clear()
+	// 构建输出结果
+	var output strings.Builder
+	output.WriteString(fmt.Sprintf("> %s\n", content)) // 显示执行的命令
 	
 	switch command {
 	case "open":
 		if len(parts) < 2 {
-			fmt.Fprintln(v, "错误: 用法: open <项目路径>")
+			output.WriteString("错误: 用法: open <项目路径>\n")
 		} else {
 			projectPath := parts[1]
 			// 如果是相对路径，转换为绝对路径
@@ -1385,24 +1450,24 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			
 			project, err := openProject(projectPath)
 			if err != nil {
-				fmt.Fprintf(v, "错误: 打开项目失败: %v\n", err)
+				output.WriteString(fmt.Sprintf("错误: 打开项目失败: %v\n", err))
 			} else {
 				globalCtx.Project = project
-				fmt.Fprintf(v, "成功打开项目: %s\n", filepath.Base(projectPath))
-				fmt.Fprintf(v, "找到 %d 个文件\n", countFiles(project.FileTree))
+				output.WriteString(fmt.Sprintf("成功打开项目: %s\n", filepath.Base(projectPath)))
+				output.WriteString(fmt.Sprintf("找到 %d 个文件\n", countFiles(project.FileTree)))
 			}
 		}
 		
 	case "generate", "g":
 		if globalCtx.Project == nil {
-			fmt.Fprintln(v, "错误: 请先打开项目")
+			output.WriteString("错误: 请先打开项目\n")
 		} else {
 			err := generateBPF(globalCtx)
 			if err != nil {
-				fmt.Fprintf(v, "错误: 生成BPF失败: %v\n", err)
+				output.WriteString(fmt.Sprintf("错误: 生成BPF失败: %v\n", err))
 			} else {
-				fmt.Fprintln(v, "成功: BPF代码生成完成")
-				fmt.Fprintln(v, "文件: debug_breakpoints.bpf.c")
+				output.WriteString("成功: BPF代码生成完成\n")
+				output.WriteString("文件: debug_breakpoints.bpf.c\n")
 				globalCtx.BpfLoaded = true
 			}
 		}
@@ -1411,45 +1476,44 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		if globalCtx.Project != nil {
 			count := len(globalCtx.Project.Breakpoints)
 			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
-			fmt.Fprintf(v, "成功: 已清除 %d 个断点\n", count)
+			output.WriteString(fmt.Sprintf("成功: 已清除 %d 个断点\n", count))
 		} else {
-			fmt.Fprintln(v, "提示: 没有打开的项目")
+			output.WriteString("提示: 没有打开的项目\n")
 		}
 		
 	case "close":
 		if globalCtx.Project != nil {
 			projectName := filepath.Base(globalCtx.Project.RootPath)
 			globalCtx.Project = nil
-			fmt.Fprintf(v, "成功: 已关闭项目 %s\n", projectName)
+			output.WriteString(fmt.Sprintf("成功: 已关闭项目 %s\n", projectName))
 		} else {
-			fmt.Fprintln(v, "提示: 没有打开的项目")
+			output.WriteString("提示: 没有打开的项目\n")
 		}
 		
 	case "help", "h":
-		fmt.Fprintln(v, "可用命令:")
-		fmt.Fprintln(v, "  open <路径>  - 打开项目目录")
-		fmt.Fprintln(v, "  generate     - 生成BPF调试代码")
-		fmt.Fprintln(v, "  clear        - 清除所有断点")
-		fmt.Fprintln(v, "  close        - 关闭当前项目")
-		fmt.Fprintln(v, "  help         - 显示此帮助信息")
+		output.WriteString("可用命令:\n")
+		output.WriteString("  open <路径>  - 打开项目目录\n")
+		output.WriteString("  generate     - 生成BPF调试代码\n")
+		output.WriteString("  clear        - 清除所有断点\n")
+		output.WriteString("  close        - 关闭当前项目\n")
+		output.WriteString("  help         - 显示此帮助信息\n")
 		
 	default:
-		fmt.Fprintf(v, "错误: 未知命令 '%s'\n", command)
-		fmt.Fprintln(v, "输入 'help' 查看可用命令")
+		output.WriteString(fmt.Sprintf("错误: 未知命令 '%s'\n", command))
+		output.WriteString("输入 'help' 查看可用命令\n")
 	}
 	
-	// 显示新的命令提示符
-	fmt.Fprintln(v, "")
-	fmt.Fprint(v, "> ")
+	// 添加提示信息
+	output.WriteString("\n按任意键返回输入模式...")
 	
-	// 设置光标到提示符后面
-	buffer := v.ViewBuffer()
-	lines := strings.Split(buffer, "\n")
-	lastLineIndex := len(lines) - 1
-	if lastLineIndex < 0 {
-		lastLineIndex = 0
-	}
-	v.SetCursor(2, lastLineIndex)
+	// 设置输出模式并保存结果
+	globalCtx.CommandMode = "output"
+	globalCtx.CommandOutput = output.String()
+	
+	// 清空并显示输出
+	v.Clear()
+	fmt.Fprint(v, globalCtx.CommandOutput)
+	v.SetCursor(0, 0)
 	
 	return nil
 }
@@ -1470,6 +1534,67 @@ func countFiles(node *FileNode) int {
 	}
 	
 	return count
+}
+
+// 处理退格键
+func handleBackspace(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	// 如果在输出模式，退格键返回输入模式
+	if globalCtx.CommandMode == "output" {
+		return returnToInputMode(g, v)
+	}
+	
+	// 在输入模式下，正常处理退格
+	// gocui的Editable视图应该自动处理退格，但我们可以手动实现
+	cx, cy := v.Cursor()
+	if cx > 2 { // 不能删除提示符 "> "
+		// 获取当前内容
+		content := v.Buffer()
+		lines := strings.Split(content, "\n")
+		if cy < len(lines) {
+			line := lines[cy]
+			if cx-1 < len(line) {
+				// 删除光标前的字符
+				newLine := line[:cx-1] + line[cx:]
+				lines[cy] = newLine
+				
+				// 重新设置内容
+				v.Clear()
+				for i, l := range lines {
+					if i == len(lines)-1 && l == "" {
+						continue // 跳过最后的空行
+					}
+					fmt.Fprintln(v, l)
+				}
+				v.SetCursor(cx-1, cy)
+			}
+		}
+	}
+	
+	return nil
+}
+
+// 返回输入模式
+func returnToInputMode(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	// 如果在输出模式，切换回输入模式
+	if globalCtx.CommandMode == "output" {
+		globalCtx.CommandMode = "input"
+		globalCtx.CommandOutput = ""
+		
+		// 清空并显示提示符
+		v.Clear()
+		fmt.Fprint(v, "> ")
+		v.SetCursor(2, 0)
+	}
+	
+	return nil
 }
 
 // 生成BPF快捷键
@@ -1724,13 +1849,15 @@ func mouseUpHandler(g *gocui.Gui, v *gocui.View) error {
 func main() {
 	// 创建调试器上下文
 	ctx := &DebuggerContext{
-		State:        DEBUG_STOPPED,
-		CurrentFocus: 0,
-		BpfLoaded:    false,
-		CurrentFunc:  "main",
-		CurrentAddr:  0x400000,
-		Running:      false,
-		MouseEnabled: false,
+		State:         DEBUG_STOPPED,
+		CurrentFocus:  0,
+		BpfLoaded:     false,
+		CurrentFunc:   "main",
+		CurrentAddr:   0x400000,
+		Running:       false,
+		MouseEnabled:  false,
+		CommandMode:   "input",  // 初始化为输入模式
+		CommandOutput: "",
 	}
 	
 	// 设置全局上下文
@@ -1812,6 +1939,22 @@ func main() {
 	
 	// Enter键处理命令（在命令窗口中）
 	if err := g.SetKeybinding("command", gocui.KeyEnter, gocui.ModNone, handleCommand); err != nil {
+		log.Panicln(err)
+	}
+	
+	// 退格键支持（在命令窗口中）
+	if err := g.SetKeybinding("command", gocui.KeyBackspace, gocui.ModNone, handleBackspace); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("command", gocui.KeyBackspace2, gocui.ModNone, handleBackspace); err != nil {
+		log.Panicln(err)
+	}
+	
+	// 任意键返回输入模式（在命令窗口中）
+	if err := g.SetKeybinding("command", gocui.KeySpace, gocui.ModNone, returnToInputMode); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("command", gocui.KeyEsc, gocui.ModNone, returnToInputMode); err != nil {
 		log.Panicln(err)
 	}
 	
