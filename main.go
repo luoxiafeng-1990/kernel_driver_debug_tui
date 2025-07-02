@@ -74,9 +74,10 @@ type DebuggerContext struct {
 	Project       *ProjectInfo
 	// 动态布局支持
 	Layout        *DynamicLayout
-	// 命令窗口状态管理
-	CommandOutput string  // 保存命令输出结果
-	CommandMode   string  // "input" 输入模式, "output" 输出模式
+	// 命令窗口状态管理 - 类似终端的历史记录
+	CommandHistory []string  // 保存所有命令历史（包括命令和输出）
+	CurrentInput   string    // 当前正在输入的命令
+	CommandDirty   bool      // 标记命令窗口是否需要重绘
 }
 
 // 动态布局配置
@@ -1008,66 +1009,62 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 	isCurrentView := currentView != nil && currentView.Name() == "command"
 	
 	if isCurrentView {
-		// 如果是聚焦状态，不要清空内容，保持用户输入和命令输出
-		// 只在必要时添加提示符
-		content := v.Buffer()
-		
-		// 如果是输出模式，显示输出结果
-		if ctx.CommandMode == "output" && ctx.CommandOutput != "" {
-			// 保持输出内容不变
-			return
-		}
-		
-		// 如果是输入模式且没有提示符，添加提示符
-		if ctx.CommandMode != "output" && !strings.Contains(content, "> ") {
-			if strings.TrimSpace(content) == "" {
-				v.Clear()
-				fmt.Fprint(v, "> ")
-				v.SetCursor(2, 0)
+		// 只有在CommandDirty为true时才重绘，避免频繁Clear()
+		if ctx.CommandDirty {
+			// 如果是聚焦状态且需要更新，显示终端式的界面
+			v.Clear()
+			
+			// 显示历史记录
+			for _, historyLine := range ctx.CommandHistory {
+				fmt.Fprintln(v, historyLine)
 			}
+			
+			// 显示当前输入行
+			fmt.Fprintf(v, "> %s", ctx.CurrentInput)
+			
+			// 设置光标位置到当前输入的末尾
+			v.SetCursor(2+len(ctx.CurrentInput), len(ctx.CommandHistory))
+			
+			// 标记已更新
+			ctx.CommandDirty = false
 		}
+		
 	} else {
-		// 如果不是聚焦状态，显示帮助信息
+		// 如果不是聚焦状态，显示简化的帮助信息
 		v.Clear()
 		
-		fmt.Fprintln(v, "命令窗口 - 按6或点击这里聚焦")
+		fmt.Fprintln(v, "命令终端 - 按6聚焦")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "可用命令:")
-		fmt.Fprintln(v, "  open <路径>  - 打开项目目录")
-		fmt.Fprintln(v, "  generate     - 生成BPF调试代码")
-		fmt.Fprintln(v, "  clear        - 清除所有断点")
-		fmt.Fprintln(v, "  close        - 关闭当前项目")
-		fmt.Fprintln(v, "  help         - 显示帮助信息")
+		fmt.Fprintln(v, "基本命令:")
+		fmt.Fprintln(v, "  help         - 显示帮助")
+		fmt.Fprintln(v, "  open <路径>  - 打开项目")
+		fmt.Fprintln(v, "  clear        - 清屏")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "快捷键:")
-		fmt.Fprintln(v, "Tab/`-切换窗口  ↑/↓-滚动  Enter-执行命令")
-		fmt.Fprintln(v, "Space-打开文件  g-生成BPF  c-清除断点  q-退出")
-		fmt.Fprintln(v, "1-文件浏览器 2-寄存器 3-变量 4-断点 5-代码 6-命令")
-		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "布局调整:")
-		fmt.Fprintln(v, "Ctrl+R-重置布局  Ctrl+L/H-左侧面板  Ctrl+J/K-命令窗口")
-		fmt.Fprintln(v, "鼠标拖拽窗口边界也可调整大小")
-	
-		// 显示鼠标支持状态
-		if ctx.MouseEnabled {
-			fmt.Fprintln(v, "鼠标: ✓ 支持点击切换焦点和滚轮滚动")
-		} else {
-			fmt.Fprintln(v, "鼠标: ✗ 不支持，请使用键盘操作")
+		fmt.Fprintln(v, "快捷键: Tab-切换窗口")
+		
+		// 显示项目状态
+		if ctx.Project != nil {
+			fmt.Fprintln(v, "")
+			fmt.Fprintf(v, "项目: %s", filepath.Base(ctx.Project.RootPath))
 		}
 		
-		// 项目状态
-		if ctx.Project == nil {
+		// 显示最近的几条命令历史（如果有的话）
+		if len(ctx.CommandHistory) > 0 {
 			fmt.Fprintln(v, "")
-			fmt.Fprintln(v, "示例: open ../tacosys_ko")
-		} else {
-			fmt.Fprintln(v, "")
-			fmt.Fprintf(v, "当前项目: %s\n", filepath.Base(ctx.Project.RootPath))
-			fmt.Fprintf(v, "断点数量: %d\n", len(ctx.Project.Breakpoints))
+			fmt.Fprintln(v, "最近命令:")
+			// 显示最后3条历史记录
+			start := len(ctx.CommandHistory) - 3
+			if start < 0 {
+				start = 0
+			}
+			for i := start; i < len(ctx.CommandHistory) && i < start+3; i++ {
+				line := ctx.CommandHistory[i]
+				if len(line) > 30 {
+					line = line[:27] + "..."
+				}
+				fmt.Fprintf(v, "  %s\n", line)
+			}
 		}
-		
-		// 重置命令模式为输入模式
-		ctx.CommandMode = "input"
-		ctx.CommandOutput = ""
 	}
 }
 
@@ -1325,6 +1322,10 @@ func switchToCode(g *gocui.Gui, v *gocui.View) error {
 
 func switchToCommand(g *gocui.Gui, v *gocui.View) error {
 	g.SetCurrentView("command")
+	// 标记命令窗口需要重绘（获得焦点时）
+	if globalCtx != nil {
+		globalCtx.CommandDirty = true
+	}
 	return nil
 }
 
@@ -1402,44 +1403,66 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		return nil
 	}
 	
-	// 获取命令内容
-	content := strings.TrimSpace(v.Buffer())
-	if content == "" {
+	// 获取当前输入的命令
+	command := strings.TrimSpace(globalCtx.CurrentInput)
+	
+	// 如果命令为空，只是换行
+	if command == "" {
+		// 添加空行到历史记录
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, ">")
+		globalCtx.CurrentInput = ""
+		// 标记需要重绘
+		globalCtx.CommandDirty = true
 		return nil
 	}
 	
-	// 移除命令提示符
-	if strings.HasPrefix(content, "> ") {
-		content = strings.TrimSpace(content[2:])
-	}
-	
-	if content == "" {
-		// 如果只有提示符，重新显示
-		v.Clear()
-		fmt.Fprint(v, "> ")
-		v.SetCursor(2, 0)
-		return nil
-	}
+	// 将命令添加到历史记录
+	globalCtx.CommandHistory = append(globalCtx.CommandHistory, fmt.Sprintf("> %s", command))
 	
 	// 解析命令
-	parts := strings.Fields(content)
+	parts := strings.Fields(command)
 	if len(parts) == 0 {
-		v.Clear()
-		fmt.Fprint(v, "> ")
-		v.SetCursor(2, 0)
+		globalCtx.CurrentInput = ""
 		return nil
 	}
 	
-	command := parts[0]
+	cmd := parts[0]
 	
-	// 构建输出结果
-	var output strings.Builder
-	output.WriteString(fmt.Sprintf("> %s\n", content)) // 显示执行的命令
+	// 执行命令并获取输出
+	var output []string
 	
-	switch command {
+	switch cmd {
+	case "help", "h":
+		output = []string{
+			"可用命令:",
+			"  help         - 显示此帮助信息",
+			"  clear        - 清屏",
+			"  open <路径>  - 打开项目目录",
+			"  generate     - 生成BPF调试代码",
+			"  breakpoint   - 清除所有断点",
+			"  close        - 关闭当前项目",
+			"  pwd          - 显示当前工作目录",
+			"",
+			"导航快捷键:",
+			"  Tab - 切换窗口",
+			"  1-6 - 直接切换到指定窗口",
+		}
+		
+	case "clear":
+		// 清屏 - 清空命令历史
+		globalCtx.CommandHistory = []string{}
+		globalCtx.CurrentInput = ""
+		// 标记需要重绘
+		globalCtx.CommandDirty = true
+		return nil
+		
+	case "pwd":
+		wd, _ := os.Getwd()
+		output = []string{wd}
+		
 	case "open":
 		if len(parts) < 2 {
-			output.WriteString("错误: 用法: open <项目路径>\n")
+			output = []string{"错误: 用法: open <项目路径>"}
 		} else {
 			projectPath := parts[1]
 			// 如果是相对路径，转换为绝对路径
@@ -1450,70 +1473,78 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			
 			project, err := openProject(projectPath)
 			if err != nil {
-				output.WriteString(fmt.Sprintf("错误: 打开项目失败: %v\n", err))
+				output = []string{fmt.Sprintf("错误: 打开项目失败: %v", err)}
 			} else {
 				globalCtx.Project = project
-				output.WriteString(fmt.Sprintf("成功打开项目: %s\n", filepath.Base(projectPath)))
-				output.WriteString(fmt.Sprintf("找到 %d 个文件\n", countFiles(project.FileTree)))
+				output = []string{
+					fmt.Sprintf("成功打开项目: %s", filepath.Base(projectPath)),
+					fmt.Sprintf("找到 %d 个文件", countFiles(project.FileTree)),
+				}
 			}
 		}
 		
 	case "generate", "g":
 		if globalCtx.Project == nil {
-			output.WriteString("错误: 请先打开项目\n")
+			output = []string{"错误: 请先打开项目"}
 		} else {
 			err := generateBPF(globalCtx)
 			if err != nil {
-				output.WriteString(fmt.Sprintf("错误: 生成BPF失败: %v\n", err))
+				output = []string{fmt.Sprintf("错误: 生成BPF失败: %v", err)}
 			} else {
-				output.WriteString("成功: BPF代码生成完成\n")
-				output.WriteString("文件: debug_breakpoints.bpf.c\n")
+				output = []string{
+					"成功: BPF代码生成完成",
+					"文件: debug_breakpoints.bpf.c",
+				}
 				globalCtx.BpfLoaded = true
 			}
 		}
 		
-	case "clear", "c":
+	case "breakpoint", "bp":
 		if globalCtx.Project != nil {
 			count := len(globalCtx.Project.Breakpoints)
 			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
-			output.WriteString(fmt.Sprintf("成功: 已清除 %d 个断点\n", count))
+			output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
 		} else {
-			output.WriteString("提示: 没有打开的项目\n")
+			output = []string{"提示: 没有打开的项目"}
 		}
 		
 	case "close":
 		if globalCtx.Project != nil {
 			projectName := filepath.Base(globalCtx.Project.RootPath)
 			globalCtx.Project = nil
-			output.WriteString(fmt.Sprintf("成功: 已关闭项目 %s\n", projectName))
+			output = []string{fmt.Sprintf("成功: 已关闭项目 %s", projectName)}
 		} else {
-			output.WriteString("提示: 没有打开的项目\n")
+			output = []string{"提示: 没有打开的项目"}
 		}
 		
-	case "help", "h":
-		output.WriteString("可用命令:\n")
-		output.WriteString("  open <路径>  - 打开项目目录\n")
-		output.WriteString("  generate     - 生成BPF调试代码\n")
-		output.WriteString("  clear        - 清除所有断点\n")
-		output.WriteString("  close        - 关闭当前项目\n")
-		output.WriteString("  help         - 显示此帮助信息\n")
+	case "status":
+		output = []string{
+			fmt.Sprintf("调试器状态: %s", globalCtx.CurrentFunc),
+			fmt.Sprintf("当前地址: 0x%X", globalCtx.CurrentAddr),
+		}
+		if globalCtx.Project != nil {
+			output = append(output, fmt.Sprintf("项目: %s", filepath.Base(globalCtx.Project.RootPath)))
+			output = append(output, fmt.Sprintf("断点数: %d", len(globalCtx.Project.Breakpoints)))
+		} else {
+			output = append(output, "项目: 未打开")
+		}
 		
 	default:
-		output.WriteString(fmt.Sprintf("错误: 未知命令 '%s'\n", command))
-		output.WriteString("输入 'help' 查看可用命令\n")
+		output = []string{
+			fmt.Sprintf("bash: %s: command not found", cmd),
+			"输入 'help' 查看可用命令",
+		}
 	}
 	
-	// 添加提示信息
-	output.WriteString("\n按任意键返回输入模式...")
+	// 将输出添加到历史记录
+	for _, line := range output {
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, line)
+	}
 	
-	// 设置输出模式并保存结果
-	globalCtx.CommandMode = "output"
-	globalCtx.CommandOutput = output.String()
-	
-	// 清空并显示输出
-	v.Clear()
-	fmt.Fprint(v, globalCtx.CommandOutput)
-	v.SetCursor(0, 0)
+	// 清空当前输入，准备下一条命令
+	globalCtx.CurrentInput = ""
+	// 标记需要重绘
+	globalCtx.CommandDirty = true
 	
 	return nil
 }
@@ -1536,64 +1567,51 @@ func countFiles(node *FileNode) int {
 	return count
 }
 
+// 处理字符输入
+func handleCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {
+	return func(g *gocui.Gui, v *gocui.View) error {
+		if globalCtx == nil {
+			return nil
+		}
+		
+		// 只在命令窗口聚焦时处理字符输入
+		if g.CurrentView() != nil && g.CurrentView().Name() == "command" {
+			// 将字符添加到当前输入
+			globalCtx.CurrentInput += string(ch)
+			// 标记需要重绘
+			globalCtx.CommandDirty = true
+		}
+		
+		return nil
+	}
+}
+
 // 处理退格键
 func handleBackspace(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx == nil {
 		return nil
 	}
 	
-	// 如果在输出模式，退格键返回输入模式
-	if globalCtx.CommandMode == "output" {
-		return returnToInputMode(g, v)
-	}
-	
-	// 在输入模式下，正常处理退格
-	// gocui的Editable视图应该自动处理退格，但我们可以手动实现
-	cx, cy := v.Cursor()
-	if cx > 2 { // 不能删除提示符 "> "
-		// 获取当前内容
-		content := v.Buffer()
-		lines := strings.Split(content, "\n")
-		if cy < len(lines) {
-			line := lines[cy]
-			if cx-1 < len(line) {
-				// 删除光标前的字符
-				newLine := line[:cx-1] + line[cx:]
-				lines[cy] = newLine
-				
-				// 重新设置内容
-				v.Clear()
-				for i, l := range lines {
-					if i == len(lines)-1 && l == "" {
-						continue // 跳过最后的空行
-					}
-					fmt.Fprintln(v, l)
-				}
-				v.SetCursor(cx-1, cy)
-			}
+	// 只在命令窗口聚焦时处理退格
+	if g.CurrentView() != nil && g.CurrentView().Name() == "command" {
+		// 删除当前输入的最后一个字符
+		if len(globalCtx.CurrentInput) > 0 {
+			globalCtx.CurrentInput = globalCtx.CurrentInput[:len(globalCtx.CurrentInput)-1]
+			// 标记需要重绘
+			globalCtx.CommandDirty = true
 		}
 	}
 	
 	return nil
 }
 
-// 返回输入模式
-func returnToInputMode(g *gocui.Gui, v *gocui.View) error {
-	if globalCtx == nil {
-		return nil
+// 清空当前输入
+func clearCurrentInput(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx != nil {
+		globalCtx.CurrentInput = ""
+		// 标记需要重绘
+		globalCtx.CommandDirty = true
 	}
-	
-	// 如果在输出模式，切换回输入模式
-	if globalCtx.CommandMode == "output" {
-		globalCtx.CommandMode = "input"
-		globalCtx.CommandOutput = ""
-		
-		// 清空并显示提示符
-		v.Clear()
-		fmt.Fprint(v, "> ")
-		v.SetCursor(2, 0)
-	}
-	
 	return nil
 }
 
@@ -1849,15 +1867,16 @@ func mouseUpHandler(g *gocui.Gui, v *gocui.View) error {
 func main() {
 	// 创建调试器上下文
 	ctx := &DebuggerContext{
-		State:         DEBUG_STOPPED,
-		CurrentFocus:  0,
-		BpfLoaded:     false,
-		CurrentFunc:   "main",
-		CurrentAddr:   0x400000,
-		Running:       false,
-		MouseEnabled:  false,
-		CommandMode:   "input",  // 初始化为输入模式
-		CommandOutput: "",
+		State:          DEBUG_STOPPED,
+		CurrentFocus:   0,
+		BpfLoaded:      false,
+		CurrentFunc:    "main",
+		CurrentAddr:    0x400000,
+		Running:        false,
+		MouseEnabled:   false,
+		CommandHistory: make([]string, 0),  // 初始化命令历史
+		CurrentInput:   "",                 // 初始化当前输入
+		CommandDirty:   true,               // 初始时需要重绘
 	}
 	
 	// 设置全局上下文
@@ -1927,8 +1946,8 @@ func main() {
 		log.Panicln(err)
 	}
 
-	// Space键文件选择
-	if err := g.SetKeybinding("filebrowser", gocui.KeySpace, gocui.ModNone, handleFileSelection); err != nil {
+	// F2键文件选择（避免与命令窗口字符冲突）
+	if err := g.SetKeybinding("filebrowser", gocui.KeyF2, gocui.ModNone, handleFileSelection); err != nil {
 		log.Panicln(err)
 	}
 	
@@ -1950,11 +1969,8 @@ func main() {
 		log.Panicln(err)
 	}
 	
-	// 任意键返回输入模式（在命令窗口中）
-	if err := g.SetKeybinding("command", gocui.KeySpace, gocui.ModNone, returnToInputMode); err != nil {
-		log.Panicln(err)
-	}
-	if err := g.SetKeybinding("command", gocui.KeyEsc, gocui.ModNone, returnToInputMode); err != nil {
+	// Escape键清空当前输入（在命令窗口中）
+	if err := g.SetKeybinding("command", gocui.KeyEsc, gocui.ModNone, clearCurrentInput); err != nil {
 		log.Panicln(err)
 	}
 	
@@ -1974,16 +1990,6 @@ func main() {
 		log.Panicln(err)
 	}
 	
-	// Ctrl+L 增加左侧面板宽度
-	if err := g.SetKeybinding("", gocui.KeyCtrlL, gocui.ModNone, adjustLeftPanelHandler); err != nil {
-		log.Panicln(err)
-	}
-	
-	// Ctrl+H 减少左侧面板宽度  
-	if err := g.SetKeybinding("", gocui.KeyCtrlH, gocui.ModNone, shrinkLeftPanelHandler); err != nil {
-		log.Panicln(err)
-	}
-	
 	// Ctrl+J 增加命令窗口高度
 	if err := g.SetKeybinding("", gocui.KeyCtrlJ, gocui.ModNone, adjustCommandHeightHandler); err != nil {
 		log.Panicln(err)
@@ -1992,6 +1998,24 @@ func main() {
 	// Ctrl+K 减少命令窗口高度
 	if err := g.SetKeybinding("", gocui.KeyCtrlK, gocui.ModNone, shrinkCommandHeightHandler); err != nil {
 		log.Panicln(err)
+	}
+	
+	// Ctrl+H 减少左侧面板宽度
+	if err := g.SetKeybinding("", gocui.KeyCtrlH, gocui.ModNone, shrinkLeftPanelHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// Ctrl+L 增加左侧面板宽度
+	if err := g.SetKeybinding("", gocui.KeyCtrlL, gocui.ModNone, adjustLeftPanelHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// 在命令窗口中添加常用字符的输入绑定
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ./-_:="
+	for _, ch := range chars {
+		if err := g.SetKeybinding("command", ch, gocui.ModNone, handleCharInput(ch)); err != nil {
+			log.Printf("警告: 无法绑定字符 %c: %v", ch, err)
+		}
 	}
 
 	// 鼠标事件绑定
