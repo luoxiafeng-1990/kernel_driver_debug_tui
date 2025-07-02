@@ -11,9 +11,9 @@ import (
 	"time"
 	"path/filepath"
 	"bufio"
+	"encoding/base64"
 
 	"github.com/jroimartin/gocui"
-	"github.com/aymanbagabas/go-osc52/v2"
 )
 
 // 调试器状态
@@ -1009,9 +1009,32 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 	isCurrentView := currentView != nil && currentView.Name() == "command"
 	
 	if isCurrentView {
+		// 检测粘贴内容（只在非Dirty状态下检测，避免循环）
+		if !ctx.CommandDirty {
+			// 获取视图缓冲区内容
+			viewBuffer := v.ViewBuffer()
+			lines := strings.Split(strings.TrimSuffix(viewBuffer, "\n"), "\n")
+			
+			// 查找当前输入行（以 "> " 开头的最后一行）
+			var actualInput string
+			for i := len(lines) - 1; i >= 0; i-- {
+				line := lines[i]
+				if strings.HasPrefix(line, "> ") {
+					actualInput = line[2:] // 去掉 "> " 前缀
+					break
+				}
+			}
+			
+			// 如果实际输入与CurrentInput不同，说明有粘贴操作
+			if actualInput != ctx.CurrentInput {
+				ctx.CurrentInput = actualInput
+				ctx.CommandDirty = true // 标记需要重新同步光标位置
+			}
+		}
+		
 		// 只有在CommandDirty为true时才重绘，避免频繁Clear()
 		if ctx.CommandDirty {
-			// 如果是聚焦状态且需要更新，显示终端式的界面
+			// 清空视图并重新绘制
 			v.Clear()
 			
 			// 显示历史记录
@@ -1023,7 +1046,9 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 			fmt.Fprintf(v, "> %s", ctx.CurrentInput)
 			
 			// 设置光标位置到当前输入的末尾
-			v.SetCursor(2+len(ctx.CurrentInput), len(ctx.CommandHistory))
+			cursorX := 2 + len(ctx.CurrentInput)  // "> " + 输入内容
+			cursorY := len(ctx.CommandHistory)    // 历史记录行数
+			v.SetCursor(cursorX, cursorY)
 			
 			// 标记已更新
 			ctx.CommandDirty = false
@@ -1110,9 +1135,10 @@ func copyToClipboard(text string) error {
 }
 
 func copyWithOSC52(text string) error {
-	// 使用OSC52序列复制到剪贴板
-	osc52Seq := osc52.New(text)
-	_, err := osc52Seq.WriteTo(os.Stderr)
+	// 简化的OSC52实现 - 需要base64编码
+	encoded := base64.StdEncoding.EncodeToString([]byte(text))
+	osc52Sequence := fmt.Sprintf("\033]52;c;%s\007", encoded)
+	_, err := os.Stderr.Write([]byte(osc52Sequence))
 	return err
 }
 
@@ -1419,14 +1445,16 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	// 将命令添加到历史记录
 	globalCtx.CommandHistory = append(globalCtx.CommandHistory, fmt.Sprintf("> %s", command))
 	
-	// 解析命令
-	parts := strings.Fields(command)
-	if len(parts) == 0 {
-		globalCtx.CurrentInput = ""
-		return nil
+	// 智能解析命令 - 保留空格
+	var cmd, args string
+	spaceIndex := strings.Index(command, " ")
+	if spaceIndex == -1 {
+		cmd = command
+		args = ""
+	} else {
+		cmd = command[:spaceIndex]
+		args = strings.TrimSpace(command[spaceIndex+1:])
 	}
-	
-	cmd := parts[0]
 	
 	// 执行命令并获取输出
 	var output []string
@@ -1437,7 +1465,7 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"可用命令:",
 			"  help         - 显示此帮助信息",
 			"  clear        - 清屏",
-			"  open <路径>  - 打开项目目录",
+			"  open <路径>  - 打开项目目录（支持带空格的路径）",
 			"  generate     - 生成BPF调试代码",
 			"  breakpoint   - 清除所有断点",
 			"  close        - 关闭当前项目",
@@ -1461,10 +1489,10 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		output = []string{wd}
 		
 	case "open":
-		if len(parts) < 2 {
-			output = []string{"错误: 用法: open <项目路径>"}
+		if args == "" {
+			output = []string{"错误: 用法: open <项目路径>", "提示: 支持带空格的路径，如: open /path/to/folder with spaces"}
 		} else {
-			projectPath := parts[1]
+			projectPath := args  // 直接使用args，保留所有空格
 			// 如果是相对路径，转换为绝对路径
 			if !filepath.IsAbs(projectPath) {
 				wd, _ := os.Getwd()
