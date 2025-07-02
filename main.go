@@ -451,6 +451,7 @@ func layout(g *gocui.Gui) error {
 		v.Editable = true
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
+		v.Wrap = false       // 禁用自动换行，防止长文本被截断
 	}
 	
 	return nil
@@ -916,35 +917,35 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 		}
 		
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "操作: Enter-设置断点  Space-打开文件")
+		fmt.Fprintln(v, "操作: Enter-设置断点  F1-文件浏览器")
 		
 	} else {
 		// 默认显示汇编代码
 		fmt.Fprintln(v, "汇编代码 (示例)")
 		fmt.Fprintln(v, "")
 		
-		insts := []string{
-			"addi sp, sp, -32",
-			"sd   ra, 24(sp)",
-			"sd   s0, 16(sp)",
-			"addi s0, sp, 32",
-			"li   a0, 0x1000",
-			"call taco_sys_mmz_alloc",
-			"mv   s1, a0",
-			"beqz s1, .error",
-			"li   a1, 64",
-			"mv   a0, s1",
-			"call memset",
-			"ld   ra, 24(sp)",
-			"ld   s0, 16(sp)",
-			"addi sp, sp, 32",
-			"ret",
-		}
-		for i := codeScroll; i < len(insts); i++ {
-			if i == codeScroll {
-				fmt.Fprintf(v, "%3d=> 0x%016x: %s\n", i+1, ctx.CurrentAddr, insts[i])
-			} else {
-				fmt.Fprintf(v, "%3d:  0x%016x: %s\n", i+1, ctx.CurrentAddr+uint64(i*4), insts[i])
+	insts := []string{
+		"addi sp, sp, -32",
+		"sd   ra, 24(sp)",
+		"sd   s0, 16(sp)",
+		"addi s0, sp, 32",
+		"li   a0, 0x1000",
+		"call taco_sys_mmz_alloc",
+		"mv   s1, a0",
+		"beqz s1, .error",
+		"li   a1, 64",
+		"mv   a0, s1",
+		"call memset",
+		"ld   ra, 24(sp)",
+		"ld   s0, 16(sp)",
+		"addi sp, sp, 32",
+		"ret",
+	}
+	for i := codeScroll; i < len(insts); i++ {
+		if i == codeScroll {
+			fmt.Fprintf(v, "%3d=> 0x%016x: %s\n", i+1, ctx.CurrentAddr, insts[i])
+		} else {
+			fmt.Fprintf(v, "%3d:  0x%016x: %s\n", i+1, ctx.CurrentAddr+uint64(i*4), insts[i])
 			}
 		}
 	}
@@ -1013,29 +1014,33 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 		if !ctx.CommandDirty {
 			// 获取视图缓冲区内容
 			viewBuffer := v.ViewBuffer()
+			
+			// 简化的粘贴检测：直接从缓冲区末尾提取当前行
 			lines := strings.Split(strings.TrimSuffix(viewBuffer, "\n"), "\n")
-			
-			// 查找当前输入行（以 "> " 开头的最后一行）
-			var actualInput string
-			for i := len(lines) - 1; i >= 0; i-- {
-				line := lines[i]
-				if strings.HasPrefix(line, "> ") {
-					actualInput = line[2:] // 去掉 "> " 前缀
-					break
+			if len(lines) > 0 {
+				lastLine := lines[len(lines)-1]
+				// 检查最后一行是否以 "> " 开头
+				if strings.HasPrefix(lastLine, "> ") {
+					actualInput := lastLine[2:] // 去掉 "> " 前缀
+					
+					// 如果实际输入与CurrentInput不同，说明有粘贴操作
+					if actualInput != ctx.CurrentInput {
+						// 调试信息：记录重要的输入变化
+						if len(actualInput) > 40 && len(ctx.CommandHistory) < 10 {
+							debugInfo := fmt.Sprintf("[DEBUG] 粘贴检测: 长度=%d, 内容=%s", len(actualInput), actualInput)
+							ctx.CommandHistory = append(ctx.CommandHistory, debugInfo)
+						}
+						ctx.CurrentInput = actualInput
+						ctx.CommandDirty = true // 标记需要重新同步光标位置
+					}
 				}
-			}
-			
-			// 如果实际输入与CurrentInput不同，说明有粘贴操作
-			if actualInput != ctx.CurrentInput {
-				ctx.CurrentInput = actualInput
-				ctx.CommandDirty = true // 标记需要重新同步光标位置
 			}
 		}
 		
 		// 只有在CommandDirty为true时才重绘，避免频繁Clear()
 		if ctx.CommandDirty {
 			// 清空视图并重新绘制
-			v.Clear()
+	v.Clear()
 			
 			// 显示历史记录
 			for _, historyLine := range ctx.CommandHistory {
@@ -1058,7 +1063,7 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 		// 如果不是聚焦状态，显示简化的帮助信息
 		v.Clear()
 		
-		fmt.Fprintln(v, "命令终端 - 按6聚焦")
+		fmt.Fprintln(v, "命令终端 - 按F6聚焦")
 		fmt.Fprintln(v, "")
 		fmt.Fprintln(v, "基本命令:")
 		fmt.Fprintln(v, "  help         - 显示帮助")
@@ -1442,6 +1447,12 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		return nil
 	}
 	
+	// 调试信息：记录截断检测
+	if len(command) > 40 && strings.Contains(command, "linux-6.") {
+		debugInfo := fmt.Sprintf("[DEBUG] 路径命令长度=%d: %s", len(command), command)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugInfo)
+	}
+	
 	// 将命令添加到历史记录
 	globalCtx.CommandHistory = append(globalCtx.CommandHistory, fmt.Sprintf("> %s", command))
 	
@@ -1473,7 +1484,8 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"",
 			"导航快捷键:",
 			"  Tab - 切换窗口",
-			"  1-6 - 直接切换到指定窗口",
+			"  F1-F6 - 直接切换到指定窗口",
+			"  Enter - 在文件浏览器中选择文件，在代码中设置断点",
 		}
 		
 	case "clear":
@@ -1600,6 +1612,17 @@ func handleCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
 		if globalCtx == nil {
 			return nil
+		}
+		
+		// 调试信息：仅记录关键问题
+		if ch == '.' && len(globalCtx.CommandHistory) < 10 {
+			currentViewName := "none"
+			if g.CurrentView() != nil {
+				currentViewName = g.CurrentView().Name()
+			}
+			debugInfo := fmt.Sprintf("[DEBUG] 点号输入，视图: %s, 当前输入长度: %d", currentViewName, len(globalCtx.CurrentInput))
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugInfo)
+			globalCtx.CommandDirty = true
 		}
 		
 		// 只在命令窗口聚焦时处理字符输入
@@ -1938,23 +1961,23 @@ func main() {
 		log.Panicln(err)
 	}
 
-	// 数字键直接切换窗口
-	if err := g.SetKeybinding("", '1', gocui.ModNone, switchToFileBrowser); err != nil {
+	// F1-F6功能键直接切换窗口（避免与命令输入冲突）
+	if err := g.SetKeybinding("", gocui.KeyF1, gocui.ModNone, switchToFileBrowser); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", '2', gocui.ModNone, switchToRegisters); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyF2, gocui.ModNone, switchToRegisters); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", '3', gocui.ModNone, switchToVariables); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyF3, gocui.ModNone, switchToVariables); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", '4', gocui.ModNone, switchToStack); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyF4, gocui.ModNone, switchToStack); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", '5', gocui.ModNone, switchToCode); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyF5, gocui.ModNone, switchToCode); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", '6', gocui.ModNone, switchToCommand); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyF6, gocui.ModNone, switchToCommand); err != nil {
 		log.Panicln(err)
 	}
 
@@ -1974,8 +1997,8 @@ func main() {
 		log.Panicln(err)
 	}
 
-	// F2键文件选择（避免与命令窗口字符冲突）
-	if err := g.SetKeybinding("filebrowser", gocui.KeyF2, gocui.ModNone, handleFileSelection); err != nil {
+	// Enter键文件选择（在文件浏览器中）
+	if err := g.SetKeybinding("filebrowser", gocui.KeyEnter, gocui.ModNone, handleFileSelection); err != nil {
 		log.Panicln(err)
 	}
 	
@@ -2039,11 +2062,20 @@ func main() {
 	}
 	
 	// 在命令窗口中添加常用字符的输入绑定
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ./-_:="
-	for _, ch := range chars {
+	// 包含所有常见的路径、文件名和命令字符
+	basicChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	pathChars := "./-_:=~+()[]{}@#$%^&*,;<>?|\\`"
+	allChars := basicChars + pathChars
+	
+	for _, ch := range allChars {
 		if err := g.SetKeybinding("command", ch, gocui.ModNone, handleCharInput(ch)); err != nil {
-			log.Printf("警告: 无法绑定字符 %c: %v", ch, err)
+			log.Printf("警告: 无法绑定字符 %c (ASCII %d): %v", ch, int(ch), err)
 		}
+	}
+	
+	// 单独处理空格键，确保优先级
+	if err := g.SetKeybinding("command", ' ', gocui.ModNone, handleCharInput(' ')); err != nil {
+		log.Printf("警告: 无法绑定空格键: %v", err)
 	}
 
 	// 鼠标事件绑定
@@ -2057,12 +2089,12 @@ func main() {
 		
 		// 鼠标滚轮滚动（命令窗口不需要滚动）
 		if viewName != "command" {
-			if err := g.SetKeybinding(viewName, gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
-				log.Panicln(err)
-			}
-			if err := g.SetKeybinding(viewName, gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
-				log.Panicln(err)
-			}
+		if err := g.SetKeybinding(viewName, gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
+			log.Panicln(err)
+		}
+		if err := g.SetKeybinding(viewName, gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
+			log.Panicln(err)
+		}
 		}
 	}
 
@@ -2082,12 +2114,12 @@ func main() {
 			select {
 			case <-ticker.C:
 				g.Update(func(g *gocui.Gui) error {
-									// 首次运行时设置初始聚焦窗口
-				if firstRun {
+					// 首次运行时设置初始聚焦窗口
+					if firstRun {
 					if _, err := g.SetCurrentView("filebrowser"); err == nil {
-						firstRun = false
+							firstRun = false
+						}
 					}
-				}
 					updateAllViews(g, ctx)
 					return nil
 				})
