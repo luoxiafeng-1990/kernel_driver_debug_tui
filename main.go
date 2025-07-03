@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"bufio"
 	"encoding/base64"
+	"io/ioutil"
 
 	"github.com/jroimartin/gocui"
 )
@@ -503,61 +504,54 @@ func buildFileTree(rootPath string) (*FileNode, error) {
 	}
 	
 	if root.IsDir {
-		err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return nil // 忽略错误，继续处理其他文件
-			}
-			
-			// 跳过根目录本身
-			if path == rootPath {
-				return nil
-			}
-			
-			// 跳过隐藏文件和目录
-			if strings.HasPrefix(info.Name(), ".") {
-				if info.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			
-			// 只处理C/C++源文件和头文件
-			if !info.IsDir() {
-				ext := strings.ToLower(filepath.Ext(info.Name()))
-				if ext != ".c" && ext != ".cpp" && ext != ".h" && ext != ".hpp" {
-					return nil
-				}
-			}
-			
-			// 计算相对路径深度
-			relPath, _ := filepath.Rel(rootPath, path)
-			depth := strings.Count(relPath, string(filepath.Separator))
-			
-			// 限制深度避免过深的目录结构
-			if depth > 3 {
-				if info.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			
-			// 创建节点
-			node := &FileNode{
-				Name:     info.Name(),
-				Path:     path,
-				IsDir:    info.IsDir(),
-				Children: make([]*FileNode, 0),
-				Expanded: false,
-			}
-			
-			// 添加到树中（简化实现，直接添加到根节点）
-			root.Children = append(root.Children, node)
-			
-			return nil
-		})
-		
+		// 使用简化的目录遍历，避免卡死 (Go 1.13兼容)
+		files, err := ioutil.ReadDir(rootPath)
 		if err != nil {
-			return nil, err
+			return root, nil // 返回空的根节点而不是错误
+		}
+		
+		// 限制文件数量，避免处理太多文件
+		count := 0
+		maxFiles := 100
+		
+		for _, file := range files {
+			if count >= maxFiles {
+				break
+			}
+			
+			// 跳过隐藏文件
+			if strings.HasPrefix(file.Name(), ".") {
+				continue
+			}
+			
+			fullPath := filepath.Join(rootPath, file.Name())
+			
+			// 如果是目录，添加但不递归
+			if file.IsDir() {
+				node := &FileNode{
+					Name:     file.Name(),
+					Path:     fullPath,
+					IsDir:    true,
+					Children: make([]*FileNode, 0),
+					Expanded: false,
+				}
+				root.Children = append(root.Children, node)
+				count++
+			} else {
+				// 只处理C/C++源文件和头文件
+				ext := strings.ToLower(filepath.Ext(file.Name()))
+				if ext == ".c" || ext == ".cpp" || ext == ".h" || ext == ".hpp" {
+					node := &FileNode{
+						Name:     file.Name(),
+						Path:     fullPath,
+						IsDir:    false,
+						Children: make([]*FileNode, 0),
+						Expanded: false,
+					}
+					root.Children = append(root.Children, node)
+					count++
+				}
+			}
 		}
 	}
 	
@@ -1505,20 +1499,32 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			output = []string{"错误: 用法: open <项目路径>", "提示: 支持带空格的路径，如: open /path/to/folder with spaces"}
 		} else {
 			projectPath := args  // 直接使用args，保留所有空格
+			output = append(output, fmt.Sprintf("正在处理路径: %s", projectPath))
+			
 			// 如果是相对路径，转换为绝对路径
 			if !filepath.IsAbs(projectPath) {
 				wd, _ := os.Getwd()
 				projectPath = filepath.Join(wd, projectPath)
+				output = append(output, fmt.Sprintf("转换为绝对路径: %s", projectPath))
 			}
 			
-			project, err := openProject(projectPath)
-			if err != nil {
-				output = []string{fmt.Sprintf("错误: 打开项目失败: %v", err)}
+			// 检查路径是否存在
+			if _, err := os.Stat(projectPath); os.IsNotExist(err) {
+				output = []string{fmt.Sprintf("错误: 路径不存在: %s", projectPath)}
 			} else {
-				globalCtx.Project = project
-				output = []string{
-					fmt.Sprintf("成功打开项目: %s", filepath.Base(projectPath)),
-					fmt.Sprintf("找到 %d 个文件", countFiles(project.FileTree)),
+				output = append(output, "路径存在，开始打开项目...")
+				
+				project, err := openProject(projectPath)
+				if err != nil {
+					output = append(output, fmt.Sprintf("错误: 打开项目失败: %v", err))
+				} else {
+					globalCtx.Project = project
+					fileCount := countFiles(project.FileTree)
+					output = append(output, []string{
+						fmt.Sprintf("成功打开项目: %s", filepath.Base(projectPath)),
+						fmt.Sprintf("找到 %d 个文件", fileCount),
+						"使用F1切换到文件浏览器查看文件树",
+					}...)
 				}
 			}
 		}
