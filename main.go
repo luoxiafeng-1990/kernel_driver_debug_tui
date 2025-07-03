@@ -79,6 +79,9 @@ type DebuggerContext struct {
 	CommandHistory []string  // 保存所有命令历史（包括命令和输出）
 	CurrentInput   string    // 当前正在输入的命令
 	CommandDirty   bool      // 标记命令窗口是否需要重绘
+	// 双击检测状态
+	LastClickTime  time.Time // 上次点击时间
+	LastClickLine  int       // 上次点击的行号
 }
 
 // 动态布局配置
@@ -951,10 +954,7 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 			ctx.Project.OpenFiles[ctx.Project.CurrentFile] = lines
 		}
 		
-		fmt.Fprintf(v, "📄 文件: %s\n", filepath.Base(ctx.Project.CurrentFile))
-		fmt.Fprintf(v, "📁 路径: %s\n", ctx.Project.CurrentFile)
-		fmt.Fprintln(v, "💡 Enter-设置断点  ●-已设置断点")
-		fmt.Fprintln(v, "")
+		fmt.Fprintf(v, "📄 %s\n", filepath.Base(ctx.Project.CurrentFile))
 		
 		// 显示代码行
 		maxLines := len(lines)
@@ -986,9 +986,6 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 				fmt.Fprintf(v, "%3d: %s\n", lineNum, line)
 			}
 		}
-		
-		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "操作: Enter-设置断点  F1-文件浏览器")
 		
 	} else {
 		// 默认显示汇编代码
@@ -1552,6 +1549,69 @@ func handleBreakpointToggle(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+// 处理代码视图鼠标点击（支持双击设置断点）
+func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Project == nil || globalCtx.Project.CurrentFile == "" {
+		// 如果没有打开文件，执行普通的聚焦处理
+		return mouseFocusHandler(g, v)
+	}
+	
+	// 获取点击位置
+	_, cy := v.Cursor()
+	currentTime := time.Now()
+	
+	// 计算实际点击的代码行号（考虑标题行和滚动偏移）
+	// 代码视图有2行标题：标题行、文件名行
+	headerLines := 2
+	clickedCodeLine := cy - headerLines + codeScroll
+	
+	// 检查是否是有效的代码行
+	if clickedCodeLine < 0 {
+		return mouseFocusHandler(g, v)
+	}
+	
+	// 计算实际的源代码行号（从1开始）
+	sourceLineNum := clickedCodeLine + 1
+	
+	// 检查是否是双击（300毫秒内在同一行点击两次）
+	isDoubleClick := false
+	if globalCtx.LastClickLine == sourceLineNum && 
+	   currentTime.Sub(globalCtx.LastClickTime) < 300*time.Millisecond {
+		isDoubleClick = true
+	}
+	
+	// 更新点击状态
+	globalCtx.LastClickTime = currentTime
+	globalCtx.LastClickLine = sourceLineNum
+	
+	if isDoubleClick {
+		// 双击：设置/取消断点
+		lines, exists := globalCtx.Project.OpenFiles[globalCtx.Project.CurrentFile]
+		if !exists {
+			var err error
+			lines, err = readFileContent(globalCtx.Project.CurrentFile)
+			if err != nil {
+				return mouseFocusHandler(g, v)
+			}
+			globalCtx.Project.OpenFiles[globalCtx.Project.CurrentFile] = lines
+		}
+		
+		// 检查行号是否有效
+		if sourceLineNum <= len(lines) {
+			addBreakpoint(globalCtx, globalCtx.Project.CurrentFile, sourceLineNum)
+			
+			// 更新所有视图以反映断点变化
+			g.Update(func(g *gocui.Gui) error {
+				updateAllViews(g, globalCtx)
+				return nil
+			})
+		}
+	}
+	
+	// 聚焦到代码视图
+	return mouseFocusHandler(g, v)
+}
+
 // 处理命令输入
 func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx == nil {
@@ -2064,6 +2124,8 @@ func main() {
 		CommandHistory: make([]string, 0),  // 初始化命令历史
 		CurrentInput:   "",                 // 初始化当前输入
 		CommandDirty:   true,               // 初始时需要重绘
+		LastClickTime:  time.Time{},        // 初始化双击检测时间
+		LastClickLine:  0,                  // 初始化双击检测行号
 	}
 	
 	// 设置全局上下文
@@ -2220,8 +2282,13 @@ func main() {
 		log.Panicln(err)
 	}
 	
+	// 代码视图特殊鼠标处理：双击设置断点
+	if err := g.SetKeybinding("code", gocui.MouseLeft, gocui.ModNone, handleCodeViewClick); err != nil {
+		log.Panicln(err)
+	}
+	
 	// 其他窗口的标准鼠标处理
-	viewNames := []string{"registers", "variables", "stack", "code", "command"}
+	viewNames := []string{"registers", "variables", "stack", "command"}
 	
 	for _, viewName := range viewNames {
 		// 鼠标单击聚焦
@@ -2238,6 +2305,14 @@ func main() {
 			log.Panicln(err)
 		}
 		}
+	}
+	
+	// 代码视图滚轮支持
+	if err := g.SetKeybinding("code", gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("code", gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
+		log.Panicln(err)
 	}
 	
 	// 文件浏览器的滚轮支持
