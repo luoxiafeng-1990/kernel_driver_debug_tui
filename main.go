@@ -90,6 +90,13 @@ type DebuggerContext struct {
 	// 弹出窗口系统
 	PopupWindows   []*PopupWindow // 所有弹出窗口列表
 	DraggingPopup  *PopupWindow  // 当前正在拖拽的弹出窗口
+	// 代码搜索系统
+	SearchMode     bool          // 是否处于搜索模式
+	SearchTerm     string        // 当前搜索词
+	SearchResults  []SearchResult // 搜索结果列表
+	CurrentMatch   int           // 当前匹配项索引
+	SearchInput    string        // 搜索输入缓冲区
+	SearchDirty    bool          // 搜索结果是否需要更新
 }
 
 // 动态布局配置
@@ -122,6 +129,14 @@ type PopupWindow struct {
 	DragStartX int      // 拖拽起始X坐标
 	DragStartY int      // 拖拽起始Y坐标
 	ScrollY    int      // 垂直滚动偏移
+}
+
+// 搜索结果结构
+type SearchResult struct {
+	LineNumber  int // 行号（从1开始）
+	StartColumn int // 匹配开始列（从0开始）
+	EndColumn   int // 匹配结束列（从0开始）
+	Text        string // 匹配的文本
 }
 
 var (
@@ -865,11 +880,17 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 		}
 	}
 	
+	// 解析函数名
+	functionName := parseFunctionName(file, line)
+	if functionName == "" {
+		functionName = "unknown"
+	}
+	
 	// 添加新断点
 	bp := Breakpoint{
 		File:     file,
 		Line:     line,
-		Function: "unknown", // 后续可以通过解析源码获取函数名
+		Function: functionName, // 使用解析出的函数名
 		Enabled:  true,
 	}
 	ctx.Project.Breakpoints = append(ctx.Project.Breakpoints, bp)
@@ -880,6 +901,166 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] 保存断点失败: %v", err))
 		ctx.CommandDirty = true
 	}
+}
+
+// 从C源码中解析指定行所在的函数名
+func parseFunctionName(filePath string, targetLine int) string {
+	// 读取文件内容
+	lines, err := readFileContent(filePath)
+	if err != nil {
+		return ""
+	}
+	
+	if targetLine <= 0 || targetLine > len(lines) {
+		return ""
+	}
+	
+	// 从目标行向上查找函数定义
+	var currentFunction string
+	
+	for i := targetLine - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		
+		// 跳过空行和注释
+		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") {
+			continue
+		}
+		
+		// 查找函数定义模式
+		// 匹配：返回类型 函数名(参数) 或 函数名(参数)
+		if funcName := extractFunctionName(line); funcName != "" {
+			currentFunction = funcName
+			// 继续向上查找，确保找到最近的函数定义
+		}
+		
+		// 如果遇到 } 说明退出了当前函数作用域
+		if strings.Contains(line, "}") && !strings.Contains(line, "{") {
+			break
+		}
+	}
+	
+	return currentFunction
+}
+
+// 从一行代码中提取函数名
+func extractFunctionName(line string) string {
+	// 移除多余的空格
+	line = strings.TrimSpace(line)
+	
+	// 常见的C函数定义模式
+	patterns := []string{
+		// static int function_name(
+		// int function_name(
+		// void function_name(
+		`^(static\s+)?([\w\s\*]+)\s+(\w+)\s*\(`,
+		// function_name( (无返回类型声明的情况)
+		`^(\w+)\s*\(`,
+	}
+	
+	for _, pattern := range patterns {
+		if matched, funcName := matchFunctionPattern(line, pattern); matched {
+			// 过滤掉一些常见的非函数关键字
+			if !isValidFunctionName(funcName) {
+				continue
+			}
+			return funcName
+		}
+	}
+	
+	return ""
+}
+
+// 使用正则表达式匹配函数模式（Go 1.13兼容的简化版本）
+func matchFunctionPattern(line, pattern string) (bool, string) {
+	// 简化的模式匹配，避免使用复杂的正则表达式
+	
+	// 模式1: 标准函数定义 "type function_name("
+	if strings.Contains(line, "(") && !strings.Contains(line, "if") && 
+	   !strings.Contains(line, "while") && !strings.Contains(line, "for") {
+		
+		// 查找 ( 的位置
+		parenIdx := strings.Index(line, "(")
+		if parenIdx == -1 {
+			return false, ""
+		}
+		
+		// 提取 ( 之前的部分
+		beforeParen := strings.TrimSpace(line[:parenIdx])
+		
+		// 按空格分割，最后一个词应该是函数名
+		parts := strings.Fields(beforeParen)
+		if len(parts) == 0 {
+			return false, ""
+		}
+		
+		funcName := parts[len(parts)-1]
+		
+		// 移除可能的指针符号
+		funcName = strings.TrimLeft(funcName, "*")
+		
+		return true, funcName
+	}
+	
+	return false, ""
+}
+
+// 检查是否是有效的函数名
+func isValidFunctionName(name string) bool {
+	// 过滤掉C关键字和常见的非函数标识符
+	invalidNames := map[string]bool{
+		"if":       true,
+		"else":     true,
+		"while":    true,
+		"for":      true,
+		"switch":   true,
+		"case":     true,
+		"return":   true,
+		"break":    true,
+		"continue": true,
+		"sizeof":   true,
+		"typedef":  true,
+		"struct":   true,
+		"union":    true,
+		"enum":     true,
+		"const":    true,
+		"static":   true,
+		"extern":   true,
+		"inline":   true,
+		"int":      true,
+		"char":     true,
+		"void":     true,
+		"long":     true,
+		"short":    true,
+		"unsigned": true,
+		"signed":   true,
+		"float":    true,
+		"double":   true,
+	}
+	
+	// 检查长度
+	if len(name) == 0 || len(name) > 64 {
+		return false
+	}
+	
+	// 检查是否是关键字
+	if invalidNames[strings.ToLower(name)] {
+		return false
+	}
+	
+	// 检查是否以数字开头
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		return false
+	}
+	
+	// 检查是否包含有效字符
+	for _, r := range name {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || 
+		     (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	
+	return true
 }
 
 // 生成BPF代码
@@ -900,24 +1081,196 @@ func generateBPF(ctx *DebuggerContext) error {
 	fmt.Fprintln(file, "#include <linux/bpf.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_helpers.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_tracing.h>")
+	fmt.Fprintln(file, "#include <linux/ptrace.h>")
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "// 自动生成的BPF调试代码")
+	fmt.Fprintln(file, "// 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Fprintln(file, "")
 	
-	// 为每个断点生成探针
+	// 添加调试上下文结构
+	fmt.Fprintln(file, "// 调试事件结构")
+	fmt.Fprintln(file, "struct debug_event {")
+	fmt.Fprintln(file, "    u32 pid;")
+	fmt.Fprintln(file, "    u32 tgid;") 
+	fmt.Fprintln(file, "    u64 timestamp;")
+	fmt.Fprintln(file, "    u32 breakpoint_id;")
+	fmt.Fprintln(file, "    char comm[16];")
+	fmt.Fprintln(file, "    char function[64];")
+	fmt.Fprintln(file, "};")
+	fmt.Fprintln(file, "")
+	
+	// 为每个启用的断点生成探针
+	validBreakpoints := 0
 	for i, bp := range ctx.Project.Breakpoints {
 		if !bp.Enabled {
 			continue
 		}
 		
-		fmt.Fprintf(file, "SEC(\"kprobe/%s\")\n", bp.Function)
-		fmt.Fprintf(file, "int trace_breakpoint_%d(struct pt_regs *ctx) {\n", i)
-		fmt.Fprintf(file, "    bpf_printk(\"断点触发: %s:%d\\n\");\n", bp.File, bp.Line)
-		fmt.Fprintf(file, "    return 0;\n")
-		fmt.Fprintf(file, "}\n\n")
+		funcName := bp.Function
+		if funcName == "unknown" || funcName == "" {
+			// 尝试重新解析函数名
+			if parsedName := parseFunctionName(bp.File, bp.Line); parsedName != "" {
+				funcName = parsedName
+				// 更新断点中的函数名
+				ctx.Project.Breakpoints[i].Function = funcName
+			} else {
+				// 跳过无法确定函数名的断点
+				continue
+			}
+		}
+		
+		fileName := filepath.Base(bp.File)
+		
+		fmt.Fprintf(file, "// 断点 %d: %s:%d 在函数 %s\n", validBreakpoints+1, fileName, bp.Line, funcName)
+		fmt.Fprintf(file, "SEC(\"kprobe/%s\")\n", funcName)
+		fmt.Fprintf(file, "int trace_breakpoint_%d(struct pt_regs *ctx) {\n", validBreakpoints)
+		fmt.Fprintln(file, "    struct debug_event event = {};")
+		fmt.Fprintln(file, "    ")
+		fmt.Fprintln(file, "    // 获取进程信息")
+		fmt.Fprintln(file, "    u64 pid_tgid = bpf_get_current_pid_tgid();")
+		fmt.Fprintln(file, "    event.pid = pid_tgid;")
+		fmt.Fprintln(file, "    event.tgid = pid_tgid >> 32;")
+		fmt.Fprintln(file, "    event.timestamp = bpf_ktime_get_ns();")
+		fmt.Fprintf(file, "    event.breakpoint_id = %d;\n", validBreakpoints)
+		fmt.Fprintln(file, "    bpf_get_current_comm(&event.comm, sizeof(event.comm));")
+		fmt.Fprintf(file, "    bpf_probe_read_str(&event.function, sizeof(event.function), \"%s\");\n", funcName)
+		fmt.Fprintln(file, "    ")
+		fmt.Fprintf(file, "    // 打印调试信息\n")
+		fmt.Fprintf(file, "    bpf_printk(\"[BREAKPOINT-%d] %s:%d in %%s() PID=%%d\\n\", \"%s\", event.pid);\n", 
+			validBreakpoints+1, fileName, bp.Line, funcName)
+		fmt.Fprintln(file, "    ")
+		fmt.Fprintln(file, "    // TODO: 将事件发送到用户空间")
+		fmt.Fprintln(file, "    // bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));")
+		fmt.Fprintln(file, "    ")
+		fmt.Fprintln(file, "    return 0;")
+		fmt.Fprintln(file, "}")
+		fmt.Fprintln(file, "")
+		
+		validBreakpoints++
+	}
+	
+	if validBreakpoints == 0 {
+		return fmt.Errorf("没有找到有效的函数名，无法生成BPF探针")
 	}
 	
 	fmt.Fprintln(file, "char LICENSE[] SEC(\"license\") = \"GPL\";")
+	
+	// 生成编译和加载脚本
+	scriptPath := filepath.Join(ctx.Project.RootPath, "load_debug_bpf.sh")
+	if err := generateLoadScript(scriptPath, validBreakpoints); err != nil {
+		return fmt.Errorf("生成加载脚本失败: %v", err)
+	}
+	
+	// 生成卸载脚本  
+	unloadScriptPath := filepath.Join(ctx.Project.RootPath, "unload_debug_bpf.sh")
+	if err := generateUnloadScript(unloadScriptPath); err != nil {
+		return fmt.Errorf("生成卸载脚本失败: %v", err)
+	}
+	
+	// 保存更新后的断点信息（包含解析出的函数名）
+	if err := saveBreakpoints(ctx); err != nil {
+		// 这不是致命错误，只记录警告
+		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[WARNING] 保存断点失败: %v", err))
+	}
+	
+	return nil
+}
+
+// 生成BPF加载脚本
+func generateLoadScript(scriptPath string, breakpointCount int) error {
+	file, err := os.Create(scriptPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// 设置可执行权限
+	os.Chmod(scriptPath, 0755)
+	
+	fmt.Fprintln(file, "#!/bin/bash")
+	fmt.Fprintln(file, "# 自动生成的BPF调试程序加载脚本")
+	fmt.Fprintln(file, "# 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "set -e  # 遇到错误立即退出")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "BPF_FILE=\"debug_breakpoints.bpf.c\"")
+	fmt.Fprintln(file, "BPF_OBJ=\"debug_breakpoints.bpf.o\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[INFO] 开始编译和加载BPF调试程序...\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查是否有root权限")
+	fmt.Fprintln(file, "if [ \"$EUID\" -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] 需要root权限来加载BPF程序\"")
+	fmt.Fprintln(file, "    echo \"请使用: sudo $0\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查BPF源文件是否存在")
+	fmt.Fprintln(file, "if [ ! -f \"$BPF_FILE\" ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF源文件 $BPF_FILE 不存在\"")
+	fmt.Fprintln(file, "    echo \"请先运行调试器并使用generate命令生成BPF代码\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 编译BPF程序")
+	fmt.Fprintln(file, "echo \"[INFO] 编译BPF程序...\"")
+	fmt.Fprintln(file, "clang -O2 -target bpf -c \"$BPF_FILE\" -o \"$BPF_OBJ\"")
+	fmt.Fprintln(file, "if [ $? -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF程序编译失败\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 加载BPF程序")
+	fmt.Fprintln(file, "echo \"[INFO] 加载BPF程序...\"")
+	fmt.Fprintln(file, "bpftool prog load \"$BPF_OBJ\" /sys/fs/bpf/debug_breakpoints")
+	fmt.Fprintln(file, "if [ $? -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF程序加载失败\"")
+	fmt.Fprintln(file, "    echo \"请检查:\"")
+	fmt.Fprintln(file, "    echo \"1. 是否安装了bpftool\"")
+	fmt.Fprintln(file, "    echo \"2. 内核是否支持BPF\"")
+	fmt.Fprintln(file, "    echo \"3. 目标函数是否存在于内核中\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintf(file, "echo \"[SUCCESS] BPF调试程序已加载，监控 %d 个断点\"\n", breakpointCount)
+	fmt.Fprintln(file, "echo \"[INFO] 使用以下命令查看调试输出:\"")
+	fmt.Fprintln(file, "echo \"  sudo cat /sys/kernel/debug/tracing/trace_pipe\"")
+	fmt.Fprintln(file, "echo \"[INFO] 使用以下命令卸载:\"")
+	fmt.Fprintln(file, "echo \"  sudo ./unload_debug_bpf.sh\"")
+	
+	return nil
+}
+
+// 生成BPF卸载脚本
+func generateUnloadScript(scriptPath string) error {
+	file, err := os.Create(scriptPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// 设置可执行权限
+	os.Chmod(scriptPath, 0755)
+	
+	fmt.Fprintln(file, "#!/bin/bash")
+	fmt.Fprintln(file, "# BPF调试程序卸载脚本")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[INFO] 卸载BPF调试程序...\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查是否有root权限")
+	fmt.Fprintln(file, "if [ \"$EUID\" -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] 需要root权限来卸载BPF程序\"")
+	fmt.Fprintln(file, "    echo \"请使用: sudo $0\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 卸载BPF程序")
+	fmt.Fprintln(file, "rm -f /sys/fs/bpf/debug_breakpoints")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 清理编译产物")
+	fmt.Fprintln(file, "rm -f debug_breakpoints.bpf.o")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[SUCCESS] BPF调试程序已卸载\"")
 	
 	return nil
 }
@@ -1591,10 +1944,37 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 	v.Clear()
 	
+	// 显示标题行，包含搜索状态
 	if g.CurrentView() != nil && g.CurrentView().Name() == "code" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 代码视图 (已聚焦)\x1b[0m")
+		if ctx.SearchMode {
+			searchStatus := ""
+			if len(ctx.SearchResults) > 0 {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (%d/%d)", 
+					ctx.SearchTerm, ctx.CurrentMatch+1, len(ctx.SearchResults))
+			} else if ctx.SearchTerm != "" {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (无结果)", ctx.SearchTerm)
+			} else {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\"", ctx.SearchInput)
+			}
+			fmt.Fprintf(v, "\x1b[43;30m▶ 代码视图 (已聚焦) %s\x1b[0m\n", searchStatus)
+		} else {
+			fmt.Fprintln(v, "\x1b[43;30m▶ 代码视图 (已聚焦)\x1b[0m")
+		}
 	} else {
-		fmt.Fprintln(v, "代码视图")
+		if ctx.SearchMode {
+			searchStatus := ""
+			if len(ctx.SearchResults) > 0 {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (%d/%d)", 
+					ctx.SearchTerm, ctx.CurrentMatch+1, len(ctx.SearchResults))
+			} else if ctx.SearchTerm != "" {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (无结果)", ctx.SearchTerm)
+			} else {
+				searchStatus = fmt.Sprintf(" | 搜索: \"%s\"", ctx.SearchInput)
+			}
+			fmt.Fprintf(v, "代码视图%s\n", searchStatus)
+		} else {
+			fmt.Fprintln(v, "代码视图")
+		}
 	}
 	
 	// 如果有打开的文件，显示文件内容
@@ -1650,11 +2030,14 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 				}
 			}
 			
+			// 应用搜索高亮
+			highlightedLine := highlightSearchMatches(line, lineNum, ctx)
+			
 			// 显示行号和断点标记
 			if hasBreakpoint {
-				fmt.Fprintf(v, "%3d● %s\n", lineNum, line)
+				fmt.Fprintf(v, "%3d● %s\n", lineNum, highlightedLine)
 			} else {
-				fmt.Fprintf(v, "%3d: %s\n", lineNum, line)
+				fmt.Fprintf(v, "%3d: %s\n", lineNum, highlightedLine)
 			}
 		}
 		
@@ -2360,7 +2743,9 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	switch cmd {
 	case "help", "h":
 		output = []string{
-			"可用命令:",
+			"🎯 RISC-V 内核调试器 - 使用指南",
+			"",
+			"📋 可用命令:",
 			"  help         - 显示此帮助信息",
 			"  clear        - 清屏",
 			"  open <路径>  - 打开项目目录（支持带空格的路径）",
@@ -2368,21 +2753,39 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  bp clear     - 清除所有断点",
 			"  breakpoints  - 查看所有断点（同bp）",
 			"  breakpoint   - 清除所有断点（同bp clear）",
-			"  generate     - 生成BPF调试代码",
+			"  generate     - 生成BPF调试代码和脚本",
 			"  close        - 关闭当前项目",
 			"  pwd          - 显示当前工作目录",
 			"",
-			"断点功能:",
-			"  • 双击代码行设置/切换断点",
+			"🔥 调试工作流程:",
+			"  1. open <项目路径>     - 打开内核驱动项目",
+			"  2. 双击代码行设置断点    - 自动解析函数名",
+			"  3. generate           - 生成BPF代码和脚本",
+			"  4. 退出调试器执行:      sudo ./load_debug_bpf.sh",
+			"  5. 查看调试输出:       sudo cat /sys/kernel/debug/tracing/trace_pipe",
+			"  6. 卸载调试程序:       sudo ./unload_debug_bpf.sh",
+			"",
+			"🎛️ 断点功能:",
+			"  • 双击代码行设置/切换断点（自动解析函数名）",
 			"  • Enter键也可设置断点",
 			"  • 断点自动保存到.debug_breakpoints.json",
 			"  • 重新打开项目时自动加载断点",
+			"  • generate生成完整的BPF程序和加载脚本",
 			"",
-			"导航快捷键:",
+			"🔍 代码搜索功能:",
+			"  Ctrl+F - 在代码视图中启动搜索",
+			"  输入关键字 - 实时输入搜索词",
+			"  回车 - 执行搜索/跳转下一个匹配项",
+			"  F3 - 跳转到下一个匹配项",
+			"  ESC - 退出搜索模式",
+			"  支持大小写不敏感搜索和高亮显示",
+			"",
+			"⌨️ 导航快捷键:",
 			"  Tab - 切换窗口",
 			"  F1-F6 - 直接切换到指定窗口",
 			"  F11 - 全屏切换",
 			"  ESC - 退出全屏/关闭弹出窗口",
+			"  q - 关闭弹出窗口",
 		}
 		
 	case "clear":
@@ -2676,6 +3079,136 @@ func clearCurrentInput(g *gocui.Gui, v *gocui.View) error {
 		// 标记需要重绘
 		globalCtx.CommandDirty = true
 	}
+	return nil
+}
+
+// ========== 搜索事件处理函数 ==========
+
+// Ctrl+F启动搜索模式
+func startSearchHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	// 只在代码视图中启动搜索
+	if v != nil && v.Name() == "code" {
+		if globalCtx.Project == nil || globalCtx.Project.CurrentFile == "" {
+			// 在命令历史中显示提示
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[INFO] 请先打开一个文件才能搜索")
+			globalCtx.CommandDirty = true
+			return nil
+		}
+		
+		startSearchMode(globalCtx)
+		
+		// 在命令历史中显示搜索提示
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] 搜索模式已启动，输入关键字并按回车搜索，ESC退出")
+		globalCtx.CommandDirty = true
+	}
+	
+	return nil
+}
+
+// 搜索模式下的字符输入处理
+func handleSearchCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {
+	return func(g *gocui.Gui, v *gocui.View) error {
+		if globalCtx == nil || !globalCtx.SearchMode {
+			return nil
+		}
+		
+		// 只在代码视图聚焦时处理搜索输入
+		if v != nil && v.Name() == "code" {
+			globalCtx.SearchInput += string(ch)
+		}
+		
+		return nil
+	}
+}
+
+// 搜索模式下的退格键处理
+func handleSearchBackspace(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || !globalCtx.SearchMode {
+		return nil
+	}
+	
+	// 只在代码视图聚焦时处理搜索输入
+	if v != nil && v.Name() == "code" {
+		if len(globalCtx.SearchInput) > 0 {
+			globalCtx.SearchInput = globalCtx.SearchInput[:len(globalCtx.SearchInput)-1]
+		}
+	}
+	
+	return nil
+}
+
+// 搜索模式下的回车键处理
+func handleSearchEnter(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || !globalCtx.SearchMode {
+		return nil
+	}
+	
+	// 只在代码视图聚焦时处理
+	if v != nil && v.Name() == "code" {
+		if globalCtx.SearchInput != "" {
+			// 如果是新的搜索词，执行搜索
+			if globalCtx.SearchTerm != globalCtx.SearchInput {
+				globalCtx.SearchTerm = globalCtx.SearchInput
+				performSearch(globalCtx)
+				
+				// 显示搜索结果统计
+				if len(globalCtx.SearchResults) > 0 {
+					globalCtx.CommandHistory = append(globalCtx.CommandHistory, 
+						fmt.Sprintf("[SEARCH] 找到 %d 个匹配项", len(globalCtx.SearchResults)))
+				} else {
+					globalCtx.CommandHistory = append(globalCtx.CommandHistory, 
+						fmt.Sprintf("[SEARCH] 未找到匹配项: \"%s\"", globalCtx.SearchTerm))
+				}
+				globalCtx.CommandDirty = true
+			} else {
+				// 跳转到下一个匹配项
+				jumpToNextMatch(globalCtx)
+			}
+		}
+	}
+	
+	return nil
+}
+
+// 搜索模式下的ESC键处理
+func handleSearchEscape(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	if globalCtx.SearchMode {
+		// 退出搜索模式
+		exitSearchMode(globalCtx)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] 已退出搜索模式")
+		globalCtx.CommandDirty = true
+		return nil
+	}
+	
+	// 如果不在搜索模式，调用原有的ESC处理
+	return escapeExitFullscreenHandler(g, v)
+}
+
+// Shift+F3跳转到上一个匹配项
+func jumpToPrevMatchHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || !globalCtx.SearchMode {
+		return nil
+	}
+	
+	jumpToPrevMatch(globalCtx)
+	return nil
+}
+
+// F3跳转到下一个匹配项
+func jumpToNextMatchHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || !globalCtx.SearchMode {
+		return nil
+	}
+	
+	jumpToNextMatch(globalCtx)
 	return nil
 }
 
@@ -3041,6 +3574,13 @@ func main() {
 		SavedLayout:    nil,                // 初始化保存的布局
 		PopupWindows:   make([]*PopupWindow, 0), // 初始化弹出窗口列表
 		DraggingPopup:  nil,                // 初始化拖拽状态
+		// 初始化搜索状态
+		SearchMode:     false,              // 初始化搜索模式
+		SearchTerm:     "",                 // 初始化搜索词
+		SearchResults:  nil,                // 初始化搜索结果
+		CurrentMatch:   -1,                 // 初始化当前匹配项
+		SearchInput:    "",                 // 初始化搜索输入
+		SearchDirty:    false,              // 初始化搜索脏标记
 	}
 	
 	// 设置全局上下文
@@ -3103,6 +3643,21 @@ func main() {
 	if err := g.SetKeybinding("", gocui.KeyEsc, gocui.ModNone, escapeExitFullscreenHandler); err != nil {
 		log.Panicln(err)
 	}
+	
+	// Ctrl+F启动搜索模式（在代码视图中）
+	if err := g.SetKeybinding("code", gocui.KeyCtrlF, gocui.ModNone, startSearchHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// F3跳转到下一个搜索结果
+	if err := g.SetKeybinding("code", gocui.KeyF3, gocui.ModNone, jumpToNextMatchHandler); err != nil {
+		log.Panicln(err)
+	}
+	
+	// ESC键在代码视图中的专门处理（处理搜索模式退出）
+	if err := g.SetKeybinding("code", gocui.KeyEsc, gocui.ModNone, handleSearchEscape); err != nil {
+		log.Panicln(err)
+	}
 
 	// 方向键滚动
 	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, scrollUpHandler); err != nil {
@@ -3125,8 +3680,13 @@ func main() {
 		log.Panicln(err)
 	}
 	
-	// Enter键设置断点（在代码视图中）
-	if err := g.SetKeybinding("code", gocui.KeyEnter, gocui.ModNone, handleBreakpointToggle); err != nil {
+	// Enter键设置断点（在代码视图中，非搜索模式）
+	if err := g.SetKeybinding("code", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		if globalCtx != nil && globalCtx.SearchMode {
+			return handleSearchEnter(g, v)
+		}
+		return handleBreakpointToggle(g, v)
+	}); err != nil {
 		log.Panicln(err)
 	}
 	
@@ -3201,6 +3761,39 @@ func main() {
 	// 单独处理空格键，确保优先级
 	if err := g.SetKeybinding("command", ' ', gocui.ModNone, handleCharInput(' ')); err != nil {
 		log.Printf("警告: 无法绑定空格键: %v", err)
+	}
+	
+	// 在代码视图中添加搜索模式下的字符输入绑定
+	searchChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."
+	for _, ch := range searchChars {
+		if err := g.SetKeybinding("code", ch, gocui.ModNone, func(ch rune) func(g *gocui.Gui, v *gocui.View) error {
+			return func(g *gocui.Gui, v *gocui.View) error {
+				if globalCtx != nil && globalCtx.SearchMode {
+					return handleSearchCharInput(ch)(g, v)
+				}
+				return nil
+			}
+		}(ch)); err != nil {
+			log.Printf("警告: 无法绑定搜索字符 %c: %v", ch, err)
+		}
+	}
+	
+	// 搜索模式下的退格键
+	if err := g.SetKeybinding("code", gocui.KeyBackspace, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		if globalCtx != nil && globalCtx.SearchMode {
+			return handleSearchBackspace(g, v)
+		}
+		return nil
+	}); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("code", gocui.KeyBackspace2, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		if globalCtx != nil && globalCtx.SearchMode {
+			return handleSearchBackspace(g, v)
+		}
+		return nil
+	}); err != nil {
+		log.Panicln(err)
 	}
 
 	// 鼠标事件绑定
@@ -3293,6 +3886,181 @@ func main() {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+}
+
+// ========== 代码搜索功能 ==========
+
+// 启动搜索模式
+func startSearchMode(ctx *DebuggerContext) {
+	if ctx == nil {
+		return
+	}
+	ctx.SearchMode = true
+	ctx.SearchInput = ""
+	ctx.SearchTerm = ""
+	ctx.SearchResults = nil
+	ctx.CurrentMatch = -1
+	ctx.SearchDirty = false
+}
+
+// 退出搜索模式
+func exitSearchMode(ctx *DebuggerContext) {
+	if ctx == nil {
+		return
+	}
+	ctx.SearchMode = false
+	ctx.SearchInput = ""
+	ctx.SearchTerm = ""
+	ctx.SearchResults = nil
+	ctx.CurrentMatch = -1
+	ctx.SearchDirty = false
+}
+
+// 执行搜索
+func performSearch(ctx *DebuggerContext) {
+	if ctx == nil || ctx.Project == nil || ctx.Project.CurrentFile == "" || ctx.SearchTerm == "" {
+		ctx.SearchResults = nil
+		ctx.CurrentMatch = -1
+		return
+	}
+	
+	// 获取当前文件内容
+	lines, exists := ctx.Project.OpenFiles[ctx.Project.CurrentFile]
+	if !exists {
+		var err error
+		lines, err = readFileContent(ctx.Project.CurrentFile)
+		if err != nil {
+			ctx.SearchResults = nil
+			ctx.CurrentMatch = -1
+			return
+		}
+		ctx.Project.OpenFiles[ctx.Project.CurrentFile] = lines
+	}
+	
+	// 清空之前的搜索结果
+	ctx.SearchResults = nil
+	searchTerm := strings.ToLower(ctx.SearchTerm) // 大小写不敏感搜索
+	
+	// 在每一行中搜索
+	for lineIdx, line := range lines {
+		lineLower := strings.ToLower(line)
+		startPos := 0
+		
+		// 在同一行中查找所有匹配项
+		for {
+			pos := strings.Index(lineLower[startPos:], searchTerm)
+			if pos == -1 {
+				break
+			}
+			
+			actualPos := startPos + pos
+			result := SearchResult{
+				LineNumber:  lineIdx + 1, // 从1开始的行号
+				StartColumn: actualPos,
+				EndColumn:   actualPos + len(ctx.SearchTerm),
+				Text:        line[actualPos:actualPos+len(ctx.SearchTerm)],
+			}
+			ctx.SearchResults = append(ctx.SearchResults, result)
+			startPos = actualPos + 1 // 继续搜索下一个匹配项
+		}
+	}
+	
+	// 设置当前匹配项
+	if len(ctx.SearchResults) > 0 {
+		ctx.CurrentMatch = 0
+	} else {
+		ctx.CurrentMatch = -1
+	}
+}
+
+// 跳转到下一个匹配项
+func jumpToNextMatch(ctx *DebuggerContext) {
+	if ctx == nil || len(ctx.SearchResults) == 0 {
+		return
+	}
+	
+	// 循环到下一个匹配项
+	ctx.CurrentMatch = (ctx.CurrentMatch + 1) % len(ctx.SearchResults)
+	
+	// 滚动代码视图到匹配项所在行
+	if ctx.CurrentMatch >= 0 && ctx.CurrentMatch < len(ctx.SearchResults) {
+		targetLine := ctx.SearchResults[ctx.CurrentMatch].LineNumber
+		// 将目标行设置为视图中心
+		codeScroll = targetLine - 10 // 向上偏移10行，让匹配项显示在中间
+		if codeScroll < 0 {
+			codeScroll = 0
+		}
+	}
+}
+
+// 跳转到上一个匹配项
+func jumpToPrevMatch(ctx *DebuggerContext) {
+	if ctx == nil || len(ctx.SearchResults) == 0 {
+		return
+	}
+	
+	// 循环到上一个匹配项
+	ctx.CurrentMatch = (ctx.CurrentMatch - 1 + len(ctx.SearchResults)) % len(ctx.SearchResults)
+	
+	// 滚动代码视图到匹配项所在行
+	if ctx.CurrentMatch >= 0 && ctx.CurrentMatch < len(ctx.SearchResults) {
+		targetLine := ctx.SearchResults[ctx.CurrentMatch].LineNumber
+		// 将目标行设置为视图中心
+		codeScroll = targetLine - 10 // 向上偏移10行，让匹配项显示在中间
+		if codeScroll < 0 {
+			codeScroll = 0
+		}
+	}
+}
+
+// 在文本中高亮搜索结果
+func highlightSearchMatches(line string, lineNumber int, ctx *DebuggerContext) string {
+	if ctx == nil || !ctx.SearchMode || ctx.SearchTerm == "" || len(ctx.SearchResults) == 0 {
+		return line
+	}
+	
+	// 找到当前行的所有匹配项
+	var matches []SearchResult
+	for _, result := range ctx.SearchResults {
+		if result.LineNumber == lineNumber {
+			matches = append(matches, result)
+		}
+	}
+	
+	if len(matches) == 0 {
+		return line
+	}
+	
+	// 从后往前处理匹配项，避免位置偏移问题
+	result := line
+	for i := len(matches) - 1; i >= 0; i-- {
+		match := matches[i]
+		
+		// 检查是否是当前选中的匹配项
+		isCurrentMatch := false
+		if ctx.CurrentMatch >= 0 && ctx.CurrentMatch < len(ctx.SearchResults) {
+			currentResult := ctx.SearchResults[ctx.CurrentMatch]
+			if currentResult.LineNumber == match.LineNumber && 
+			   currentResult.StartColumn == match.StartColumn {
+				isCurrentMatch = true
+			}
+		}
+		
+		// 应用高亮样式
+		before := result[:match.StartColumn]
+		matchText := result[match.StartColumn:match.EndColumn]
+		after := result[match.EndColumn:]
+		
+		if isCurrentMatch {
+			// 当前匹配项使用红色背景
+			result = before + "\x1b[41;37m" + matchText + "\x1b[0m" + after
+		} else {
+			// 其他匹配项使用黄色背景
+			result = before + "\x1b[43;30m" + matchText + "\x1b[0m" + after
+		}
+	}
+	
+	return result
 }
 
 // ========== 断点持久化功能 ==========
