@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"bufio"
 	"encoding/base64"
+	"encoding/json"
 	"io/ioutil"
 
 	"github.com/jroimartin/gocui"
@@ -86,6 +87,9 @@ type DebuggerContext struct {
 	IsFullscreen   bool          // 是否处于全屏状态
 	FullscreenView string        // 当前全屏的窗口名称
 	SavedLayout    *DynamicLayout // 保存的原始布局
+	// 弹出窗口系统
+	PopupWindows   []*PopupWindow // 所有弹出窗口列表
+	DraggingPopup  *PopupWindow  // 当前正在拖拽的弹出窗口
 }
 
 // 动态布局配置
@@ -103,6 +107,21 @@ type DynamicLayout struct {
 	DragStartX        int
 	DragStartY        int
 	DragOriginalValue int
+}
+
+// 弹出窗口结构
+type PopupWindow struct {
+	ID         string   // 窗口唯一标识
+	Title      string   // 窗口标题
+	X, Y       int      // 窗口左上角位置
+	Width      int      // 窗口宽度  
+	Height     int      // 窗口高度
+	Content    []string // 窗口内容（按行存储）
+	Visible    bool     // 是否可见
+	Dragging   bool     // 是否正在拖拽
+	DragStartX int      // 拖拽起始X坐标
+	DragStartY int      // 拖拽起始Y坐标
+	ScrollY    int      // 垂直滚动偏移
 }
 
 var (
@@ -404,6 +423,39 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 		currentView = v.Name()
 	}
 	
+	// 首先检查当前视图是否是弹出窗口
+	if v != nil && strings.HasPrefix(v.Name(), "popup_") {
+		// 如果当前聚焦的是弹出窗口，直接关闭它
+		popupID := strings.TrimPrefix(v.Name(), "popup_")
+		if err := closePopupWindowWithView(g, globalCtx, popupID); err != nil {
+			debugMsg := fmt.Sprintf("[ERROR] ESC键关闭当前弹出窗口失败: %s, 错误: %v", popupID, err)
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		} else {
+			debugMsg := fmt.Sprintf("[DEBUG] ESC键成功关闭当前弹出窗口: %s", popupID)
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		}
+		globalCtx.CommandDirty = true
+		return nil
+	}
+	
+	// 其次检查是否有弹出窗口需要关闭（处理其他情况）
+	if len(globalCtx.PopupWindows) > 0 {
+		// 关闭最顶层的弹出窗口
+		lastPopup := globalCtx.PopupWindows[len(globalCtx.PopupWindows)-1]
+		if err := closePopupWindowWithView(g, globalCtx, lastPopup.ID); err != nil {
+			// 如果关闭失败，记录错误信息
+			debugMsg := fmt.Sprintf("[ERROR] ESC键关闭弹出窗口失败: %s, 错误: %v", lastPopup.ID, err)
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		} else {
+			// 调试信息
+			debugMsg := fmt.Sprintf("[DEBUG] ESC键成功关闭弹出窗口: %s", lastPopup.ID)
+			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		}
+		globalCtx.CommandDirty = true
+		
+		return nil
+	}
+	
 	// 只有在全屏状态下才处理ESC键退出全屏
 	if globalCtx.IsFullscreen {
 		// 调试信息
@@ -655,6 +707,11 @@ func layout(g *gocui.Gui) error {
 		v.Wrap = false       // 禁用自动换行，防止长文本被截断
 	}
 	
+	// 渲染弹出窗口 (在最后渲染，确保在顶层显示)
+	if err := renderPopupWindows(g, globalCtx); err != nil {
+		return err
+	}
+	
 	return nil
 }
 
@@ -684,6 +741,15 @@ func openProject(projectPath string) (*ProjectInfo, error) {
 		return nil, fmt.Errorf("构建文件树失败: %v", err)
 	}
 	project.FileTree = fileTree
+	
+	// 创建临时上下文以加载断点
+	tempCtx := &DebuggerContext{Project: project}
+	
+	// 尝试加载保存的断点
+	if err := loadBreakpoints(tempCtx); err != nil {
+		// 如果加载断点失败，记录错误但不影响项目打开
+		log.Printf("警告: 加载断点失败: %v", err)
+	}
 	
 	return project, nil
 }
@@ -789,6 +855,12 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 	for i, bp := range ctx.Project.Breakpoints {
 		if bp.File == file && bp.Line == line {
 			ctx.Project.Breakpoints[i].Enabled = !ctx.Project.Breakpoints[i].Enabled
+			// 保存断点到文件
+			if err := saveBreakpoints(ctx); err != nil {
+				// 在命令历史中记录错误
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] 保存断点失败: %v", err))
+				ctx.CommandDirty = true
+			}
 			return
 		}
 	}
@@ -801,6 +873,13 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 		Enabled:  true,
 	}
 	ctx.Project.Breakpoints = append(ctx.Project.Breakpoints, bp)
+	
+	// 保存断点到文件
+	if err := saveBreakpoints(ctx); err != nil {
+		// 在命令历史中记录错误
+		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] 保存断点失败: %v", err))
+		ctx.CommandDirty = true
+	}
 }
 
 // 生成BPF代码
@@ -839,6 +918,388 @@ func generateBPF(ctx *DebuggerContext) error {
 	}
 	
 	fmt.Fprintln(file, "char LICENSE[] SEC(\"license\") = \"GPL\";")
+	
+	return nil
+}
+
+// ========== 弹出窗口系统 ==========
+
+// 创建弹出窗口
+func createPopupWindow(ctx *DebuggerContext, id, title string, width, height int, content []string) *PopupWindow {
+	// 计算窗口居中位置 (假设屏幕80x24，实际会在layout时调整)
+	x := (80 - width) / 2
+	y := (24 - height) / 2
+	if x < 0 { x = 0 }
+	if y < 0 { y = 0 }
+	
+	popup := &PopupWindow{
+		ID:       id,
+		Title:    title,
+		X:        x,
+		Y:        y,
+		Width:    width,
+		Height:   height,
+		Content:  content,
+		Visible:  true,
+		Dragging: false,
+		ScrollY:  0,
+	}
+	
+	return popup
+}
+
+// 显示弹出窗口
+func showPopupWindow(ctx *DebuggerContext, popup *PopupWindow) {
+	if ctx == nil {
+		return
+	}
+	
+	// 检查是否已存在相同ID的窗口
+	for i, existing := range ctx.PopupWindows {
+		if existing.ID == popup.ID {
+			// 更新现有窗口
+			ctx.PopupWindows[i] = popup
+			return
+		}
+	}
+	
+	// 添加新窗口
+	ctx.PopupWindows = append(ctx.PopupWindows, popup)
+}
+
+// 关闭弹出窗口
+func closePopupWindow(ctx *DebuggerContext, id string) {
+	if ctx == nil {
+		return
+	}
+	
+	for i, popup := range ctx.PopupWindows {
+		if popup.ID == id {
+			// 从切片中删除
+			ctx.PopupWindows = append(ctx.PopupWindows[:i], ctx.PopupWindows[i+1:]...)
+			break
+		}
+	}
+}
+
+// 关闭弹出窗口并删除gocui视图
+func closePopupWindowWithView(g *gocui.Gui, ctx *DebuggerContext, id string) error {
+	if ctx == nil {
+		return nil
+	}
+	
+	// 删除对应的gocui视图
+	viewName := fmt.Sprintf("popup_%s", id)
+	if err := g.DeleteView(viewName); err != nil && err != gocui.ErrUnknownView {
+		// 如果删除视图失败且不是因为视图不存在，记录错误但继续
+		log.Printf("警告: 删除弹出窗口视图失败: %v", err)
+	}
+	
+	// 从弹出窗口列表中删除
+	for i, popup := range ctx.PopupWindows {
+		if popup.ID == id {
+			// 如果正在拖拽这个窗口，停止拖拽
+			if ctx.DraggingPopup != nil && ctx.DraggingPopup.ID == id {
+				ctx.DraggingPopup = nil
+			}
+			
+			// 从切片中删除
+			ctx.PopupWindows = append(ctx.PopupWindows[:i], ctx.PopupWindows[i+1:]...)
+			break
+		}
+	}
+	
+	return nil
+}
+
+// 查找弹出窗口
+func findPopupWindow(ctx *DebuggerContext, id string) *PopupWindow {
+	if ctx == nil {
+		return nil
+	}
+	
+	for _, popup := range ctx.PopupWindows {
+		if popup.ID == id {
+			return popup
+		}
+	}
+	return nil
+}
+
+// 检测鼠标是否在弹出窗口内
+func getPopupWindowAt(ctx *DebuggerContext, x, y int) *PopupWindow {
+	if ctx == nil {
+		return nil
+	}
+	
+	// 从后往前检查 (后添加的窗口在顶层)
+	for i := len(ctx.PopupWindows) - 1; i >= 0; i-- {
+		popup := ctx.PopupWindows[i]
+		if !popup.Visible {
+			continue
+		}
+		
+		if x >= popup.X && x < popup.X+popup.Width &&
+		   y >= popup.Y && y < popup.Y+popup.Height {
+			return popup
+		}
+	}
+	return nil
+}
+
+// 检测鼠标是否在弹出窗口标题栏内
+func isInPopupTitleBar(popup *PopupWindow, x, y int) bool {
+	if popup == nil {
+		return false
+	}
+	
+	// 标题栏是窗口顶部的第一行
+	return x >= popup.X && x < popup.X+popup.Width &&
+		   y == popup.Y
+}
+
+// 弹出窗口专用关闭处理函数
+func popupCloseHandler(g *gocui.Gui, v *gocui.View) error {
+	if v == nil || globalCtx == nil {
+		return nil
+	}
+	
+	// 获取弹出窗口ID
+	viewName := v.Name()
+	if !strings.HasPrefix(viewName, "popup_") {
+		return nil
+	}
+	popupID := strings.TrimPrefix(viewName, "popup_")
+	
+	// 关闭弹出窗口
+	if err := closePopupWindowWithView(g, globalCtx, popupID); err != nil {
+		debugMsg := fmt.Sprintf("[ERROR] q键关闭弹出窗口失败: %s, 错误: %v", popupID, err)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+	} else {
+		debugMsg := fmt.Sprintf("[DEBUG] q键成功关闭弹出窗口: %s", popupID)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+	}
+	globalCtx.CommandDirty = true
+	
+	return nil
+}
+
+// 为弹出窗口绑定鼠标事件和键盘事件
+func bindPopupMouseEvents(g *gocui.Gui, viewName string) {
+	// 绑定鼠标左键点击事件（用于拖拽）
+	g.SetKeybinding(viewName, gocui.MouseLeft, gocui.ModNone, popupMouseHandler)
+	
+	// 绑定鼠标滚轮事件（用于滚动）
+	g.SetKeybinding(viewName, gocui.MouseWheelUp, gocui.ModNone, popupScrollUpHandler)
+	g.SetKeybinding(viewName, gocui.MouseWheelDown, gocui.ModNone, popupScrollDownHandler)
+	
+	// 绑定q键关闭弹出窗口（避免与全局ESC键冲突）
+	g.SetKeybinding(viewName, 'q', gocui.ModNone, popupCloseHandler)
+	g.SetKeybinding(viewName, 'Q', gocui.ModNone, popupCloseHandler)
+	
+	// 为了兼容，也绑定ESC键，但优先级较低
+	g.SetKeybinding(viewName, gocui.KeyEsc, gocui.ModNone, popupCloseHandler)
+	
+	// 绑定方向键用于滚动
+	g.SetKeybinding(viewName, gocui.KeyArrowUp, gocui.ModNone, popupScrollUpHandler)
+	g.SetKeybinding(viewName, gocui.KeyArrowDown, gocui.ModNone, popupScrollDownHandler)
+	
+	// 注意：拖拽移动事件由全局的mouseDragResizeHandler处理
+	// 鼠标释放事件由全局的mouseUpHandler处理
+}
+
+// 弹出窗口鼠标点击处理函数
+func popupMouseHandler(g *gocui.Gui, v *gocui.View) error {
+	if v == nil || globalCtx == nil {
+		return nil
+	}
+	
+	// 聚焦到弹出窗口
+	g.SetCurrentView(v.Name())
+	
+	// 获取弹出窗口ID
+	viewName := v.Name()
+	if !strings.HasPrefix(viewName, "popup_") {
+		return nil
+	}
+	popupID := strings.TrimPrefix(viewName, "popup_")
+	
+	// 查找对应的弹出窗口
+	popup := findPopupWindow(globalCtx, popupID)
+	if popup == nil {
+		return nil
+	}
+	
+	// 获取鼠标相对位置（简化实现）
+	ox, oy := v.Origin()
+	cx, cy := v.Cursor()
+	mouseX := ox + cx
+	mouseY := oy + cy
+	
+	// 检查是否点击了标题栏（用于拖拽）
+	if isInPopupTitleBar(popup, mouseX, mouseY) {
+		// 开始拖拽弹出窗口
+		popup.Dragging = true
+		popup.DragStartX = mouseX - popup.X
+		popup.DragStartY = mouseY - popup.Y
+		globalCtx.DraggingPopup = popup
+		
+		// 将此窗口移到最前面
+		for i, p := range globalCtx.PopupWindows {
+			if p.ID == popup.ID {
+				// 移除当前位置的窗口
+				globalCtx.PopupWindows = append(globalCtx.PopupWindows[:i], globalCtx.PopupWindows[i+1:]...)
+				// 添加到末尾（最前面）
+				globalCtx.PopupWindows = append(globalCtx.PopupWindows, popup)
+				break
+			}
+		}
+	}
+	
+	return nil
+}
+
+// 弹出窗口向上滚动处理函数
+func popupScrollUpHandler(g *gocui.Gui, v *gocui.View) error {
+	if v == nil || globalCtx == nil {
+		return nil
+	}
+	
+	// 获取弹出窗口ID
+	viewName := v.Name()
+	if !strings.HasPrefix(viewName, "popup_") {
+		return nil
+	}
+	popupID := strings.TrimPrefix(viewName, "popup_")
+	
+	// 查找对应的弹出窗口
+	popup := findPopupWindow(globalCtx, popupID)
+	if popup == nil {
+		return nil
+	}
+	
+	// 向上滚动
+	if popup.ScrollY > 0 {
+		popup.ScrollY--
+	}
+	
+	return nil
+}
+
+// 弹出窗口向下滚动处理函数
+func popupScrollDownHandler(g *gocui.Gui, v *gocui.View) error {
+	if v == nil || globalCtx == nil {
+		return nil
+	}
+	
+	// 获取弹出窗口ID
+	viewName := v.Name()
+	if !strings.HasPrefix(viewName, "popup_") {
+		return nil
+	}
+	popupID := strings.TrimPrefix(viewName, "popup_")
+	
+	// 查找对应的弹出窗口
+	popup := findPopupWindow(globalCtx, popupID)
+	if popup == nil {
+		return nil
+	}
+	
+	// 向下滚动（检查是否还有更多内容）
+	availableLines := popup.Height - 3 // 减去边框和提示行
+	if availableLines < 1 {
+		availableLines = 1
+	}
+	
+	maxScroll := len(popup.Content) - availableLines
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
+	
+	if popup.ScrollY < maxScroll {
+		popup.ScrollY++
+	}
+	
+	return nil
+}
+
+// 渲染弹出窗口
+func renderPopupWindows(g *gocui.Gui, ctx *DebuggerContext) error {
+	if ctx == nil {
+		return nil
+	}
+	
+	maxX, maxY := g.Size()
+	
+	for i, popup := range ctx.PopupWindows {
+		if !popup.Visible {
+			continue
+		}
+		
+		// 调整窗口位置以适应屏幕大小
+		if popup.X + popup.Width > maxX {
+			popup.X = maxX - popup.Width
+		}
+		if popup.Y + popup.Height > maxY {
+			popup.Y = maxY - popup.Height
+		}
+		if popup.X < 0 { popup.X = 0 }
+		if popup.Y < 0 { popup.Y = 0 }
+		
+		// 创建窗口视图
+		viewName := fmt.Sprintf("popup_%s", popup.ID)
+		v, err := g.SetView(viewName, popup.X, popup.Y, popup.X+popup.Width-1, popup.Y+popup.Height-1)
+		if err != nil {
+			if err != gocui.ErrUnknownView {
+				return err
+			}
+			v.Frame = true
+			v.Highlight = true
+			v.SelBgColor = gocui.ColorBlue
+			
+			// 为新创建的弹出窗口绑定鼠标事件
+			bindPopupMouseEvents(g, viewName)
+			
+			// 自动聚焦到新创建的弹出窗口
+			g.SetCurrentView(viewName)
+		}
+		
+		// 设置标题
+		v.Title = fmt.Sprintf(" %s [可拖动] ", popup.Title)
+		
+		// 清空并填充内容
+		v.Clear()
+		
+		// 显示关闭按钮提示
+		fmt.Fprintf(v, "\x1b[90m按 q 键关闭 | 拖动标题栏移动窗口\x1b[0m\n")
+		fmt.Fprintln(v, "")
+		
+		// 显示内容 (考虑滚动)
+		availableLines := popup.Height - 3 // 减去边框和提示行
+		if availableLines < 1 {
+			availableLines = 1
+		}
+		
+		startIdx := popup.ScrollY
+		endIdx := startIdx + availableLines
+		if endIdx > len(popup.Content) {
+			endIdx = len(popup.Content)
+		}
+		
+		for idx := startIdx; idx < endIdx; idx++ {
+			fmt.Fprintln(v, popup.Content[idx])
+		}
+		
+		// 如果有更多内容，显示滚动提示
+		if len(popup.Content) > availableLines {
+			fmt.Fprintf(v, "\x1b[90m[%d/%d] 使用↑↓滚动\x1b[0m", popup.ScrollY+1, len(popup.Content)-availableLines+1)
+		}
+		
+		// 将窗口移到最顶层 (通过设置TabStop)
+		if i == len(ctx.PopupWindows)-1 {
+			v.Highlight = true
+		}
+	}
 	
 	return nil
 }
@@ -1903,15 +2364,25 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  help         - 显示此帮助信息",
 			"  clear        - 清屏",
 			"  open <路径>  - 打开项目目录（支持带空格的路径）",
+			"  bp           - 查看所有断点（弹出窗口）",
+			"  bp clear     - 清除所有断点",
+			"  breakpoints  - 查看所有断点（同bp）",
+			"  breakpoint   - 清除所有断点（同bp clear）",
 			"  generate     - 生成BPF调试代码",
-			"  breakpoint   - 清除所有断点",
 			"  close        - 关闭当前项目",
 			"  pwd          - 显示当前工作目录",
+			"",
+			"断点功能:",
+			"  • 双击代码行设置/切换断点",
+			"  • Enter键也可设置断点",
+			"  • 断点自动保存到.debug_breakpoints.json",
+			"  • 重新打开项目时自动加载断点",
 			"",
 			"导航快捷键:",
 			"  Tab - 切换窗口",
 			"  F1-F6 - 直接切换到指定窗口",
-			"  Enter - 在文件浏览器中选择文件，在代码中设置断点",
+			"  F11 - 全屏切换",
+			"  ESC - 退出全屏/关闭弹出窗口",
 		}
 		
 	case "clear":
@@ -1977,13 +2448,44 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			}
 		}
 		
-	case "breakpoint", "bp":
+	case "breakpoint":
 		if globalCtx.Project != nil {
 			count := len(globalCtx.Project.Breakpoints)
 			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
-			output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
+			// 保存清空后的断点列表
+			if err := saveBreakpoints(globalCtx); err != nil {
+				output = []string{fmt.Sprintf("警告: 清除断点成功但保存失败: %v", err)}
+			} else {
+				output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
+			}
 		} else {
 			output = []string{"提示: 没有打开的项目"}
+		}
+		
+	case "bp":
+		if args == "clear" {
+			// bp clear - 清除所有断点
+			if globalCtx.Project != nil {
+				count := len(globalCtx.Project.Breakpoints)
+				globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
+				// 保存清空后的断点列表
+				if err := saveBreakpoints(globalCtx); err != nil {
+					output = []string{fmt.Sprintf("警告: 清除断点成功但保存失败: %v", err)}
+				} else {
+					output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
+				}
+			} else {
+				output = []string{"提示: 没有打开的项目"}
+			}
+		} else {
+			// bp - 查看断点（默认行为）
+			if globalCtx.Project == nil {
+				output = []string{"错误: 请先打开项目"}
+			} else {
+				// 创建断点查看弹出窗口
+				showBreakpointsPopup(globalCtx)
+				output = []string{"断点查看窗口已打开"}
+			}
 		}
 		
 	case "close":
@@ -1993,6 +2495,15 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			output = []string{fmt.Sprintf("成功: 已关闭项目 %s", projectName)}
 		} else {
 			output = []string{"提示: 没有打开的项目"}
+		}
+		
+	case "breakpoints":
+		if globalCtx.Project == nil {
+			output = []string{"错误: 请先打开项目"}
+		} else {
+			// 创建断点查看弹出窗口
+			showBreakpointsPopup(globalCtx)
+			output = []string{"断点查看窗口已打开"}
 		}
 		
 	case "status":
@@ -2043,6 +2554,70 @@ func countFiles(node *FileNode) int {
 	}
 	
 	return count
+}
+
+// 显示断点查看弹出窗口
+func showBreakpointsPopup(ctx *DebuggerContext) {
+	if ctx == nil || ctx.Project == nil {
+		return
+	}
+	
+	var content []string
+	
+	if len(ctx.Project.Breakpoints) == 0 {
+		content = []string{
+			"当前没有设置断点",
+			"",
+			"使用方法:",
+			"• 在代码视图中双击代码行设置断点",
+			"• 按Enter键也可以设置断点",
+			"• 再次点击相同行可切换断点启用/禁用状态",
+		}
+	} else {
+		content = append(content, fmt.Sprintf("共有 %d 个断点:", len(ctx.Project.Breakpoints)))
+		content = append(content, "")
+		content = append(content, "状态 | 文件 | 行号 | 函数")
+		content = append(content, "---- | ---- | ---- | ----")
+		
+		for i, bp := range ctx.Project.Breakpoints {
+			status := "✓ 启用"
+			if !bp.Enabled {
+				status = "✗ 禁用"
+			}
+			
+			fileName := filepath.Base(bp.File)
+			function := bp.Function
+			if function == "unknown" {
+				function = "-"
+			}
+			
+			line := fmt.Sprintf("%2d.  %s | %s | %d | %s", 
+				i+1, status, fileName, bp.Line, function)
+			content = append(content, line)
+		}
+		
+		content = append(content, "")
+		content = append(content, "操作说明:")
+		content = append(content, "• 断点会自动保存到 .debug_breakpoints.json")
+		content = append(content, "• 重新打开项目时会自动加载断点")
+		content = append(content, "• 使用命令 'generate' 生成BPF调试代码")
+		content = append(content, "")
+		content = append(content, "🔥 关闭窗口: 按 q 键 或 点击任意窗口边界外区域")
+	}
+	
+	// 计算合适的窗口大小
+	width := 60
+	height := len(content) + 5 // 内容 + 边框 + 提示行
+	if height > 20 {
+		height = 20 // 最大高度
+	}
+	if height < 8 {
+		height = 8 // 最小高度
+	}
+	
+	// 创建弹出窗口
+	popup := createPopupWindow(ctx, "breakpoints", "断点查看器", width, height, content)
+	showPopupWindow(ctx, popup)
 }
 
 // 处理字符输入
@@ -2301,7 +2876,7 @@ func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
 		g.SetCurrentView(v.Name())
 	}
 	
-	if globalCtx == nil || globalCtx.Layout == nil {
+	if globalCtx == nil {
 		return nil
 	}
 	
@@ -2316,11 +2891,52 @@ func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
 		mouseX := ox + cx
 		mouseY := oy + cy
 		
-		// 检测是否在可拖拽边界上
-		boundary := detectResizeBoundary(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
-		if boundary != "" {
-			startDrag(boundary, mouseX, mouseY, globalCtx.Layout)
+		// 首先检查是否点击了弹出窗口
+		popup := getPopupWindowAt(globalCtx, mouseX, mouseY)
+		if popup != nil {
+			// 检查是否点击了标题栏（用于拖拽）
+			if isInPopupTitleBar(popup, mouseX, mouseY) {
+				// 开始拖拽弹出窗口
+				popup.Dragging = true
+				popup.DragStartX = mouseX - popup.X
+				popup.DragStartY = mouseY - popup.Y
+				globalCtx.DraggingPopup = popup
+				
+				// 将此窗口移到最前面
+				for i, p := range globalCtx.PopupWindows {
+					if p.ID == popup.ID {
+						// 移除当前位置的窗口
+						globalCtx.PopupWindows = append(globalCtx.PopupWindows[:i], globalCtx.PopupWindows[i+1:]...)
+						// 添加到末尾（最前面）
+						globalCtx.PopupWindows = append(globalCtx.PopupWindows, popup)
+						break
+					}
+				}
+				return nil
+			}
+			// 如果点击了弹出窗口但不是标题栏，不做处理，让弹出窗口获得焦点
 			return nil
+		} else if len(globalCtx.PopupWindows) > 0 {
+			// 如果有弹出窗口但没有点击到任何一个，说明点击了窗口外部区域
+			// 关闭最顶层的弹出窗口
+			if len(globalCtx.PopupWindows) > 0 {
+				lastPopup := globalCtx.PopupWindows[len(globalCtx.PopupWindows)-1]
+				if err := closePopupWindowWithView(g, globalCtx, lastPopup.ID); err == nil {
+					debugMsg := fmt.Sprintf("[DEBUG] 点击外部区域关闭弹出窗口: %s", lastPopup.ID)
+					globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+					globalCtx.CommandDirty = true
+				}
+				return nil
+			}
+		}
+		
+		// 如果没有点击弹出窗口，检查是否在可拖拽边界上（布局调整）
+		if globalCtx.Layout != nil {
+			boundary := detectResizeBoundary(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
+			if boundary != "" {
+				startDrag(boundary, mouseX, mouseY, globalCtx.Layout)
+				return nil
+			}
 		}
 	}
 	
@@ -2342,7 +2958,7 @@ func handleCommandClick(g *gocui.Gui, v *gocui.View) error {
 
 // 鼠标拖拽处理
 func mouseDragResizeHandler(g *gocui.Gui, v *gocui.View) error {
-	if globalCtx == nil || globalCtx.Layout == nil || !globalCtx.Layout.IsDragging {
+	if globalCtx == nil {
 		return nil
 	}
 	
@@ -2355,8 +2971,34 @@ func mouseDragResizeHandler(g *gocui.Gui, v *gocui.View) error {
 		mouseX := ox + cx
 		mouseY := oy + cy
 		
-		// 处理拖拽移动
-		handleDragMove(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
+		// 首先检查是否在拖拽弹出窗口
+		if globalCtx.DraggingPopup != nil && globalCtx.DraggingPopup.Dragging {
+			// 计算新位置
+			newX := mouseX - globalCtx.DraggingPopup.DragStartX
+			newY := mouseY - globalCtx.DraggingPopup.DragStartY
+			
+			// 边界检查
+			if newX < 0 { newX = 0 }
+			if newY < 0 { newY = 0 }
+			if newX + globalCtx.DraggingPopup.Width > maxX {
+				newX = maxX - globalCtx.DraggingPopup.Width
+			}
+			if newY + globalCtx.DraggingPopup.Height > maxY {
+				newY = maxY - globalCtx.DraggingPopup.Height
+			}
+			
+			// 更新窗口位置
+			globalCtx.DraggingPopup.X = newX
+			globalCtx.DraggingPopup.Y = newY
+			
+			return nil
+		}
+		
+		// 如果没有在拖拽弹出窗口，检查布局拖拽
+		if globalCtx.Layout != nil && globalCtx.Layout.IsDragging {
+			// 处理拖拽移动
+			handleDragMove(mouseX, mouseY, globalCtx.Layout, maxX, maxY)
+		}
 	}
 	
 	return nil
@@ -2364,8 +3006,17 @@ func mouseDragResizeHandler(g *gocui.Gui, v *gocui.View) error {
 
 // 鼠标释放处理 - 结束拖拽
 func mouseUpHandler(g *gocui.Gui, v *gocui.View) error {
-	if globalCtx != nil && globalCtx.Layout != nil && globalCtx.Layout.IsDragging {
-		endDrag(globalCtx.Layout)
+	if globalCtx != nil {
+		// 结束弹出窗口拖拽
+		if globalCtx.DraggingPopup != nil && globalCtx.DraggingPopup.Dragging {
+			globalCtx.DraggingPopup.Dragging = false
+			globalCtx.DraggingPopup = nil
+		}
+		
+		// 结束布局拖拽
+		if globalCtx.Layout != nil && globalCtx.Layout.IsDragging {
+			endDrag(globalCtx.Layout)
+		}
 	}
 	return nil
 }
@@ -2388,6 +3039,8 @@ func main() {
 		IsFullscreen:   false,              // 初始化全屏状态
 		FullscreenView: "",                 // 初始化全屏视图
 		SavedLayout:    nil,                // 初始化保存的布局
+		PopupWindows:   make([]*PopupWindow, 0), // 初始化弹出窗口列表
+		DraggingPopup:  nil,                // 初始化拖拽状态
 	}
 	
 	// 设置全局上下文
@@ -2640,6 +3293,64 @@ func main() {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+}
+
+// ========== 断点持久化功能 ==========
+
+// 保存断点到文件
+func saveBreakpoints(ctx *DebuggerContext) error {
+	if ctx.Project == nil {
+		return fmt.Errorf("没有打开的项目")
+	}
+	
+	breakpointsPath := filepath.Join(ctx.Project.RootPath, ".debug_breakpoints.json")
+	
+	// 将断点序列化为JSON
+	data, err := json.MarshalIndent(ctx.Project.Breakpoints, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化断点失败: %v", err)
+	}
+	
+	// 写入文件
+	err = ioutil.WriteFile(breakpointsPath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("保存断点文件失败: %v", err)
+	}
+	
+	return nil
+}
+
+// 从文件加载断点
+func loadBreakpoints(ctx *DebuggerContext) error {
+	if ctx.Project == nil {
+		return fmt.Errorf("没有打开的项目")
+	}
+	
+	breakpointsPath := filepath.Join(ctx.Project.RootPath, ".debug_breakpoints.json")
+	
+	// 检查文件是否存在
+	if _, err := os.Stat(breakpointsPath); os.IsNotExist(err) {
+		// 文件不存在，不是错误，只是没有保存的断点
+		return nil
+	}
+	
+	// 读取文件
+	data, err := ioutil.ReadFile(breakpointsPath)
+	if err != nil {
+		return fmt.Errorf("读取断点文件失败: %v", err)
+	}
+	
+	// 反序列化JSON
+	var breakpoints []Breakpoint
+	err = json.Unmarshal(data, &breakpoints)
+	if err != nil {
+		return fmt.Errorf("解析断点文件失败: %v", err)
+	}
+	
+	// 加载断点到项目
+	ctx.Project.Breakpoints = breakpoints
+	
+	return nil
 }
 
 
