@@ -1082,9 +1082,20 @@ func generateBPF(ctx *DebuggerContext) error {
 	fmt.Fprintln(file, "#include <bpf/bpf_helpers.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_tracing.h>")
 	fmt.Fprintln(file, "#include <linux/ptrace.h>")
+	fmt.Fprintln(file, "#include <linux/types.h>")
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "// 自动生成的BPF调试代码")
 	fmt.Fprintln(file, "// 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintln(file, "")
+	
+	// 添加类型定义（兼容性处理）
+	fmt.Fprintln(file, "// 类型定义（确保兼容性）")
+	fmt.Fprintln(file, "#ifndef u32")
+	fmt.Fprintln(file, "typedef __u32 u32;")
+	fmt.Fprintln(file, "#endif")
+	fmt.Fprintln(file, "#ifndef u64")
+	fmt.Fprintln(file, "typedef __u64 u64;")
+	fmt.Fprintln(file, "#endif")
 	fmt.Fprintln(file, "")
 	
 	// 添加调试上下文结构
@@ -1271,6 +1282,71 @@ func generateUnloadScript(scriptPath string) error {
 	fmt.Fprintln(file, "rm -f debug_breakpoints.bpf.o")
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "echo \"[SUCCESS] BPF调试程序已卸载\"")
+	
+	return nil
+}
+
+// 编译BPF代码
+func compileBPF(ctx *DebuggerContext) error {
+	if ctx.Project == nil {
+		return fmt.Errorf("没有打开的项目")
+	}
+	
+	// 检查BPF源文件是否存在
+	bpfSourcePath := filepath.Join(ctx.Project.RootPath, "debug_breakpoints.bpf.c")
+	if _, err := os.Stat(bpfSourcePath); os.IsNotExist(err) {
+		return fmt.Errorf("BPF源文件不存在: %s\n请先使用 'generate' 命令生成BPF代码", bpfSourcePath)
+	}
+	
+	// 目标文件路径
+	bpfObjectPath := filepath.Join(ctx.Project.RootPath, "debug_breakpoints.bpf.o")
+	
+	// 检查clang编译器是否可用
+	if _, err := exec.LookPath("clang"); err != nil {
+		return fmt.Errorf("找不到clang编译器，请安装:\n  Ubuntu/Debian: sudo apt install clang\n  CentOS/RHEL: sudo yum install clang")
+	}
+	
+	// 构建编译命令
+	// 使用标准的BPF编译参数：
+	// -target bpf: 目标架构为BPF虚拟机
+	// -O2: 优化等级（BPF验证器要求）
+	// -g: 生成调试信息
+	// -c: 仅编译，不链接
+	compileCmd := exec.Command("clang", 
+		"-target", "bpf",
+		"-O2",
+		"-g",
+		"-c", bpfSourcePath,
+		"-o", bpfObjectPath)
+	
+	// 设置工作目录
+	compileCmd.Dir = ctx.Project.RootPath
+	
+	// 执行编译
+	output, err := compileCmd.CombinedOutput()
+	if err != nil {
+		// 编译失败，返回详细错误信息
+		return fmt.Errorf("BPF编译失败:\n编译命令: %s\n错误输出:\n%s\n\n常见问题排查:\n• 检查是否安装了linux-headers\n• 确认clang版本支持BPF目标\n• 验证BPF源代码语法", 
+			compileCmd.String(), string(output))
+	}
+	
+	// 检查输出文件是否生成
+	if _, err := os.Stat(bpfObjectPath); os.IsNotExist(err) {
+		return fmt.Errorf("编译完成但未找到输出文件: %s", bpfObjectPath)
+	}
+	
+	// 编译成功，添加调试信息到命令历史
+	ctx.CommandHistory = append(ctx.CommandHistory, 
+		fmt.Sprintf("[INFO] BPF编译成功: %s -> %s", 
+			filepath.Base(bpfSourcePath), filepath.Base(bpfObjectPath)))
+	
+	// 显示编译输出（如果有警告信息）
+	if len(output) > 0 {
+		ctx.CommandHistory = append(ctx.CommandHistory, 
+			fmt.Sprintf("[COMPILER] %s", strings.TrimSpace(string(output))))
+	}
+	
+	ctx.CommandDirty = true
 	
 	return nil
 }
@@ -2754,6 +2830,8 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  breakpoints  - 查看所有断点（同bp）",
 			"  breakpoint   - 清除所有断点（同bp clear）",
 			"  generate     - 生成BPF调试代码和脚本",
+			"  compile      - 编译BPF代码到目标文件（同build）",
+			"  build        - 编译BPF代码到目标文件（同compile）",
 			"  close        - 关闭当前项目",
 			"  pwd          - 显示当前工作目录",
 			"",
@@ -2761,9 +2839,10 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  1. open <项目路径>     - 打开内核驱动项目",
 			"  2. 双击代码行设置断点    - 自动解析函数名",
 			"  3. generate           - 生成BPF代码和脚本",
-			"  4. 退出调试器执行:      sudo ./load_debug_bpf.sh",
-			"  5. 查看调试输出:       sudo cat /sys/kernel/debug/tracing/trace_pipe",
-			"  6. 卸载调试程序:       sudo ./unload_debug_bpf.sh",
+			"  4. compile            - 编译BPF代码(可选，脚本会自动编译)",
+			"  5. 退出调试器执行:      sudo ./load_debug_bpf.sh",
+			"  6. 查看调试输出:       sudo cat /sys/kernel/debug/tracing/trace_pipe",
+			"  7. 卸载调试程序:       sudo ./unload_debug_bpf.sh",
 			"",
 			"🎛️ 断点功能:",
 			"  • 双击代码行设置/切换断点（自动解析函数名）",
@@ -2771,6 +2850,14 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  • 断点自动保存到.debug_breakpoints.json",
 			"  • 重新打开项目时自动加载断点",
 			"  • generate生成完整的BPF程序和加载脚本",
+			"",
+			"🏗️ BPF编译和平台支持:",
+			"  • BPF编译目标: BPF虚拟机字节码(平台无关)",
+			"  • 无需交叉编译: clang -target bpf 即可",
+			"  • 支持架构: x86_64, ARM64, RISC-V64, 等",
+			"  • 内核JIT: 自动编译到目标架构机器码",
+			"  • RISC-V: Linux 5.13+ 内核已支持BPF JIT",
+			"  • 编译器要求: clang 10+ 推荐",
 			"",
 			"🔍 代码搜索功能:",
 			"  Ctrl+F - 在代码视图中启动搜索",
@@ -2846,8 +2933,32 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 				output = []string{
 					"成功: BPF代码生成完成",
 					"文件: debug_breakpoints.bpf.c",
+					"提示: 使用 'compile' 命令编译BPF代码",
 				}
 				globalCtx.BpfLoaded = true
+			}
+		}
+		
+	case "compile", "build":
+		if globalCtx.Project == nil {
+			output = []string{"错误: 请先打开项目"}
+		} else {
+			err := compileBPF(globalCtx)
+			if err != nil {
+				output = []string{fmt.Sprintf("错误: 编译BPF失败: %v", err)}
+			} else {
+				output = []string{
+					"成功: BPF代码编译完成",
+					"文件: debug_breakpoints.bpf.o",
+					"",
+					"🔥 BPF编译说明:",
+					"• BPF字节码是平台无关的，无需交叉编译",
+					"• 编译目标是BPF虚拟机，不是物理CPU架构",
+					"• Linux内核会JIT编译到对应架构(x86/ARM/RISC-V)",
+					"• RISC-V64平台已获得Linux内核BPF JIT支持",
+					"",
+					"下一步: 使用 sudo ./load_debug_bpf.sh 加载程序",
+				}
 			}
 		}
 		
