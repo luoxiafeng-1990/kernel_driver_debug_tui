@@ -109,6 +109,12 @@ var (
 	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int
 )
 
+// ========== 文件浏览器行映射 ==========
+var (
+	fileBrowserLineMap []*FileNode // 记录文件浏览器每一行对应的FileNode
+	fileBrowserDisplayLines []string // 记录显示的行内容，用于调试
+)
+
 // ========== 动态布局系统 ==========
 
 // 初始化动态布局
@@ -727,11 +733,17 @@ func updateFileBrowserView(g *gocui.Gui, ctx *DebuggerContext) {
 	
 	fmt.Fprintln(v, "")
 	fmt.Fprintf(v, "项目: %s\n", filepath.Base(ctx.Project.RootPath))
+	fmt.Fprintln(v, "💡 单击文件打开，单击目录展开/折叠")
 	fmt.Fprintln(v, "")
 	
 	// 显示文件树
 	if ctx.Project.FileTree != nil {
-		displayFileTree(v, ctx.Project.FileTree, 0, fileScroll)
+		// 重置行映射表
+		fileBrowserLineMap = make([]*FileNode, 0)
+		fileBrowserDisplayLines = make([]string, 0)
+		
+		// 显示文件树并构建映射表
+		displayFileTreeWithMapping(v, ctx.Project.FileTree, 0, ctx)
 	}
 }
 
@@ -770,6 +782,69 @@ func displayFileTree(v *gocui.View, node *FileNode, depth int, scroll int) {
 	if node.IsDir && node.Expanded {
 		for _, child := range node.Children {
 			displayFileTree(v, child, depth+1, scroll)
+		}
+	}
+}
+
+// 新的文件树显示函数，支持行映射和交互
+func displayFileTreeWithMapping(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext) {
+	displayFileTreeNode(v, node, depth, ctx)
+}
+
+// 递归显示文件树节点并建立映射
+func displayFileTreeNode(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext) {
+	if node == nil {
+		return
+	}
+	
+	indent := strings.Repeat("  ", depth)
+	icon := "📄"
+	highlight := ""
+	
+	if node.IsDir {
+		if node.Expanded {
+			icon = "📂"
+		} else {
+			icon = "📁"
+		}
+	} else {
+		// 根据文件扩展名显示不同图标
+		ext := strings.ToLower(filepath.Ext(node.Name))
+		switch ext {
+		case ".c":
+			icon = "🔧"
+		case ".cpp":
+			icon = "⚙️"
+		case ".h", ".hpp":
+			icon = "📋"
+		default:
+			icon = "📄"
+		}
+		
+		// 检查是否是当前打开的文件
+		if ctx.Project != nil && ctx.Project.CurrentFile == node.Path {
+			highlight = "\x1b[32m" // 绿色高亮
+		}
+	}
+	
+	// 构建显示行
+	displayLine := fmt.Sprintf("%s%s %s", indent, icon, node.Name)
+	
+	// 添加到映射表
+	fileBrowserLineMap = append(fileBrowserLineMap, node)
+	fileBrowserDisplayLines = append(fileBrowserDisplayLines, displayLine)
+	
+	// 显示行（考虑高亮）
+	if highlight != "" {
+		fmt.Fprintf(v, "%s%s\x1b[0m\n", highlight, displayLine)
+	} else {
+		fmt.Fprintf(v, "%s\n", displayLine)
+	}
+	
+	// 如果是展开的目录，显示子节点
+	if node.IsDir && node.Expanded {
+		for _, child := range node.Children {
+			displayFileTreeNode(v, child, depth+1, ctx)
 		}
 	}
 }
@@ -876,7 +951,9 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 			ctx.Project.OpenFiles[ctx.Project.CurrentFile] = lines
 		}
 		
-		fmt.Fprintf(v, "文件: %s\n", filepath.Base(ctx.Project.CurrentFile))
+		fmt.Fprintf(v, "📄 文件: %s\n", filepath.Base(ctx.Project.CurrentFile))
+		fmt.Fprintf(v, "📁 路径: %s\n", ctx.Project.CurrentFile)
+		fmt.Fprintln(v, "💡 Enter-设置断点  ●-已设置断点")
 		fmt.Fprintln(v, "")
 		
 		// 显示代码行
@@ -1386,7 +1463,7 @@ func scrollWindowByName(name string, direction int) {
 
 // ========== 事件处理函数 ==========
 
-// 处理文件选择
+// 处理文件选择（旧的键盘版本，保留向后兼容）
 func handleFileSelection(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx == nil || globalCtx.Project == nil {
 		return nil
@@ -1401,6 +1478,59 @@ func handleFileSelection(g *gocui.Gui, v *gocui.View) error {
 				break
 			}
 		}
+	}
+	
+	return nil
+}
+
+// 处理文件浏览器鼠标点击
+func handleFileBrowserClick(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil || globalCtx.Project == nil {
+		return nil
+	}
+	
+	// 获取鼠标点击位置
+	_, cy := v.Cursor()
+	
+	// 计算实际点击的行号（考虑标题行和滚动偏移）
+	// 文件浏览器有3行标题：标题、空行、项目名、空行
+	headerLines := 4
+	clickedLine := cy - headerLines + fileScroll
+	
+	// 检查点击行是否有效
+	if clickedLine < 0 || clickedLine >= len(fileBrowserLineMap) {
+		return nil
+	}
+	
+	// 获取对应的文件节点
+	node := fileBrowserLineMap[clickedLine]
+	if node == nil {
+		return nil
+	}
+	
+	if node.IsDir {
+		// 点击目录：切换展开/折叠状态
+		node.Expanded = !node.Expanded
+		
+		// 更新文件浏览器显示
+		g.Update(func(g *gocui.Gui) error {
+			updateFileBrowserView(g, globalCtx)
+			return nil
+		})
+		
+	} else {
+		// 点击文件：在代码视图中打开
+		globalCtx.Project.CurrentFile = node.Path
+		codeScroll = 0 // 重置代码视图滚动位置
+		
+		// 更新所有视图以反映文件打开状态
+		g.Update(func(g *gocui.Gui) error {
+			updateAllViews(g, globalCtx)
+			return nil
+		})
+		
+		// 自动切换到代码视图
+		g.SetCurrentView("code")
 	}
 	
 	return nil
@@ -2085,7 +2215,13 @@ func main() {
 	}
 
 	// 鼠标事件绑定
-	viewNames := []string{"filebrowser", "registers", "variables", "stack", "code", "command"}
+	// 文件浏览器特殊鼠标处理：点击打开文件/展开目录
+	if err := g.SetKeybinding("filebrowser", gocui.MouseLeft, gocui.ModNone, handleFileBrowserClick); err != nil {
+		log.Panicln(err)
+	}
+	
+	// 其他窗口的标准鼠标处理
+	viewNames := []string{"registers", "variables", "stack", "code", "command"}
 	
 	for _, viewName := range viewNames {
 		// 鼠标单击聚焦
@@ -2102,6 +2238,14 @@ func main() {
 			log.Panicln(err)
 		}
 		}
+	}
+	
+	// 文件浏览器的滚轮支持
+	if err := g.SetKeybinding("filebrowser", gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("filebrowser", gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
+		log.Panicln(err)
 	}
 
 	// 设置信号处理
