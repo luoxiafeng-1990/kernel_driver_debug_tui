@@ -966,7 +966,21 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 			startLine = 0
 		}
 		
-		for i := startLine; i < maxLines && i < startLine+20; i++ {
+		// 计算窗口可用的显示行数
+		_, viewHeight := v.Size()
+		headerLines := 2 // 标题行："代码视图" + 文件名行
+		availableLines := viewHeight - headerLines
+		if availableLines < 1 {
+			availableLines = 1 // 至少显示1行
+		}
+		
+		// 动态适应窗口高度显示代码
+		endLine := startLine + availableLines
+		if endLine > maxLines {
+			endLine = maxLines
+		}
+		
+		for i := startLine; i < endLine; i++ {
 			lineNum := i + 1
 			line := lines[i]
 			
@@ -992,28 +1006,51 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 		fmt.Fprintln(v, "汇编代码 (示例)")
 		fmt.Fprintln(v, "")
 		
-	insts := []string{
-		"addi sp, sp, -32",
-		"sd   ra, 24(sp)",
-		"sd   s0, 16(sp)",
-		"addi s0, sp, 32",
-		"li   a0, 0x1000",
-		"call taco_sys_mmz_alloc",
-		"mv   s1, a0",
-		"beqz s1, .error",
-		"li   a1, 64",
-		"mv   a0, s1",
-		"call memset",
-		"ld   ra, 24(sp)",
-		"ld   s0, 16(sp)",
-		"addi sp, sp, 32",
-		"ret",
-	}
-	for i := codeScroll; i < len(insts); i++ {
-		if i == codeScroll {
-			fmt.Fprintf(v, "%3d=> 0x%016x: %s\n", i+1, ctx.CurrentAddr, insts[i])
-		} else {
-			fmt.Fprintf(v, "%3d:  0x%016x: %s\n", i+1, ctx.CurrentAddr+uint64(i*4), insts[i])
+		insts := []string{
+			"addi sp, sp, -32",
+			"sd   ra, 24(sp)",
+			"sd   s0, 16(sp)",
+			"addi s0, sp, 32",
+			"li   a0, 0x1000",
+			"call taco_sys_mmz_alloc",
+			"mv   s1, a0",
+			"beqz s1, .error",
+			"li   a1, 64",
+			"mv   a0, s1",
+			"call memset",
+			"ld   ra, 24(sp)",
+			"ld   s0, 16(sp)",
+			"addi sp, sp, 32",
+			"ret",
+		}
+		
+		// 计算窗口可用的显示行数（汇编代码）
+		_, viewHeight := v.Size()
+		headerLines := 3 // "代码视图" + "汇编代码 (示例)" + 空行
+		availableLines := viewHeight - headerLines
+		if availableLines < 1 {
+			availableLines = 1
+		}
+		
+		// 动态适应窗口高度显示汇编代码
+		startLine := codeScroll
+		if startLine >= len(insts) {
+			startLine = len(insts) - 1
+		}
+		if startLine < 0 {
+			startLine = 0
+		}
+		
+		endLine := startLine + availableLines
+		if endLine > len(insts) {
+			endLine = len(insts)
+		}
+		
+		for i := startLine; i < endLine; i++ {
+			if i == codeScroll {
+				fmt.Fprintf(v, "%3d=> 0x%016x: %s\n", i+1, ctx.CurrentAddr, insts[i])
+			} else {
+				fmt.Fprintf(v, "%3d:  0x%016x: %s\n", i+1, ctx.CurrentAddr+uint64(i*4), insts[i])
 			}
 		}
 	}
