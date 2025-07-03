@@ -82,6 +82,10 @@ type DebuggerContext struct {
 	// 双击检测状态
 	LastClickTime  time.Time // 上次点击时间
 	LastClickLine  int       // 上次点击的行号
+	// 全屏状态管理
+	IsFullscreen   bool          // 是否处于全屏状态
+	FullscreenView string        // 当前全屏的窗口名称
+	SavedLayout    *DynamicLayout // 保存的原始布局
 }
 
 // 动态布局配置
@@ -119,6 +123,59 @@ var (
 )
 
 // ========== 动态布局系统 ==========
+
+// 全屏布局
+func layoutFullscreen(g *gocui.Gui, viewName string, maxX, maxY int) error {
+	// 状态栏始终显示
+	if v, err := g.SetView("status", 0, 0, maxX-1, 2); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "状态"
+	}
+	
+	// 全屏窗口占据状态栏下方的所有空间
+	if v, err := g.SetView(viewName, 0, 3, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+		
+		// 根据窗口类型设置标题和属性
+		switch viewName {
+		case "filebrowser":
+			v.Title = "文件浏览器 [全屏] - F11/ESC退出"
+		case "code":
+			v.Title = "代码视图 [全屏] - F11/ESC退出"
+		case "registers":
+			v.Title = "寄存器 [全屏] - F11/ESC退出"
+		case "variables":
+			v.Title = "变量 [全屏] - F11/ESC退出"
+		case "stack":
+			v.Title = "函数调用堆栈 [全屏] - F11/ESC退出"
+		case "command":
+			v.Title = "命令 [全屏] - F11/ESC退出"
+			v.Editable = true
+			v.Wrap = false
+		default:
+			v.Title = fmt.Sprintf("%s [全屏] - F11/ESC退出", viewName)
+		}
+	}
+	
+	// 隐藏其他所有窗口（通过将它们设置为不可见的大小）
+	allViews := []string{"filebrowser", "code", "registers", "variables", "stack", "command"}
+	for _, name := range allViews {
+		if name != viewName {
+			// 将其他窗口设置为不可见（位置在屏幕外）
+			if _, err := g.SetView(name, maxX, maxY, maxX, maxY); err != nil && err != gocui.ErrUnknownView {
+				return err
+			}
+		}
+	}
+	
+	return nil
+}
 
 // 初始化动态布局
 func initDynamicLayout(maxX, maxY int) *DynamicLayout {
@@ -263,6 +320,135 @@ func resetLayout(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+// F11全屏切换处理函数
+func toggleFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	if globalCtx.IsFullscreen {
+		// 退出全屏：恢复之前的布局
+		if globalCtx.SavedLayout != nil {
+			globalCtx.Layout = globalCtx.SavedLayout
+			globalCtx.SavedLayout = nil
+		}
+		globalCtx.IsFullscreen = false
+		globalCtx.FullscreenView = ""
+		
+		// 重新聚焦到之前的窗口
+		if v != nil {
+			g.SetCurrentView(v.Name())
+		}
+		
+	} else {
+		// 进入全屏：保存当前布局
+		currentView := g.CurrentView()
+		if currentView == nil {
+			// 如果没有当前视图，默认全屏代码视图
+			globalCtx.FullscreenView = "code"
+		} else {
+			viewName := currentView.Name()
+			// 检查是否是有效的可全屏窗口
+			validViews := []string{"filebrowser", "code", "registers", "variables", "stack", "command"}
+			isValid := false
+			for _, name := range validViews {
+				if name == viewName {
+					isValid = true
+					break
+				}
+			}
+			
+			if isValid {
+				globalCtx.FullscreenView = viewName
+			} else {
+				// 如果当前窗口不支持全屏，默认使用代码视图
+				globalCtx.FullscreenView = "code"
+			}
+		}
+		
+		// 保存当前布局
+		if globalCtx.Layout != nil {
+			// 深拷贝当前布局
+			globalCtx.SavedLayout = &DynamicLayout{
+				LeftPanelWidth:    globalCtx.Layout.LeftPanelWidth,
+				RightPanelWidth:   globalCtx.Layout.RightPanelWidth,
+				CommandHeight:     globalCtx.Layout.CommandHeight,
+				RightPanelSplit1:  globalCtx.Layout.RightPanelSplit1,
+				RightPanelSplit2:  globalCtx.Layout.RightPanelSplit2,
+				IsDragging:        false, // 重置拖拽状态
+				DragBoundary:      "",
+				DragStartX:        0,
+				DragStartY:        0,
+				DragOriginalValue: 0,
+			}
+		}
+		
+		globalCtx.IsFullscreen = true
+		
+		// 聚焦到全屏窗口
+		g.SetCurrentView(globalCtx.FullscreenView)
+	}
+	
+	return nil
+}
+
+// ESC键退出全屏处理函数
+func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
+	if globalCtx == nil {
+		return nil
+	}
+	
+	// 添加调试信息到命令历史
+	currentView := "none"
+	if v != nil {
+		currentView = v.Name()
+	}
+	
+	// 只有在全屏状态下才处理ESC键退出全屏
+	if globalCtx.IsFullscreen {
+		// 调试信息
+		debugMsg := fmt.Sprintf("[DEBUG] ESC键退出全屏: 当前视图=%s, 全屏视图=%s", currentView, globalCtx.FullscreenView)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		globalCtx.CommandDirty = true
+		
+		// 退出全屏：恢复之前的布局
+		if globalCtx.SavedLayout != nil {
+			globalCtx.Layout = globalCtx.SavedLayout
+			globalCtx.SavedLayout = nil
+		}
+		globalCtx.IsFullscreen = false
+		
+		// 保存当前全屏的窗口名称，用于重新聚焦
+		previousView := globalCtx.FullscreenView
+		globalCtx.FullscreenView = ""
+		
+		// 重新聚焦到之前的窗口
+		if previousView != "" {
+			g.SetCurrentView(previousView)
+		}
+		
+		return nil
+	}
+	
+	// 如果不在全屏状态，ESC键保持原有功能（如清空命令输入）
+	// 检查当前是否在命令窗口
+	if v != nil && v.Name() == "command" {
+		// 调试信息
+		debugMsg := fmt.Sprintf("[DEBUG] ESC键清空命令输入: 当前输入=%s", globalCtx.CurrentInput)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+		globalCtx.CommandDirty = true
+		
+		return clearCurrentInput(g, v)
+	}
+	
+	// 其他情况的调试信息
+	debugMsg := fmt.Sprintf("[DEBUG] ESC键无操作: 视图=%s, 全屏状态=%v", currentView, globalCtx.IsFullscreen)
+	globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+	globalCtx.CommandDirty = true
+	
+	return nil
+}
+
 // 键盘调整窗口大小
 func adjustLeftPanelHandler(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx == nil || globalCtx.Layout == nil {
@@ -324,6 +510,11 @@ func shrinkCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {
 
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
+	
+	// 检查是否处于全屏状态
+	if globalCtx != nil && globalCtx.IsFullscreen && globalCtx.FullscreenView != "" {
+		return layoutFullscreen(g, globalCtx.FullscreenView, maxX, maxY)
+	}
 	
 	// 初始化动态布局（如果不存在）
 	if globalCtx != nil && globalCtx.Layout == nil {
@@ -674,19 +865,24 @@ func updateStatusView(g *gocui.Gui, ctx *DebuggerContext) {
 	fmt.Fprintf(v, "RISC-V 内核调试器 | 状态: %s | 当前函数: %s | 地址: 0x%X", 
 		stateStr, ctx.CurrentFunc, ctx.CurrentAddr)
 	
-	// 显示拖拽状态和提示
-	if ctx.Layout != nil {
-		if ctx.Layout.IsDragging {
-			fmt.Fprintf(v, " | 🔧 正在调整: %s", getBoundaryName(ctx.Layout.DragBoundary))
-		} else {
-			fmt.Fprint(v, " | 💡 提示: 鼠标拖拽窗口边界调整大小, Ctrl+R重置布局")
+	// 显示全屏状态和操作提示
+	if ctx.IsFullscreen {
+		fmt.Fprintf(v, " | 🖥️ 全屏模式: %s | F11/ESC-退出全屏", ctx.FullscreenView)
+	} else {
+		// 显示拖拽状态和提示
+		if ctx.Layout != nil {
+			if ctx.Layout.IsDragging {
+				fmt.Fprintf(v, " | 🔧 正在调整: %s", getBoundaryName(ctx.Layout.DragBoundary))
+			} else {
+				fmt.Fprint(v, " | 💡 提示: 鼠标拖拽窗口边界调整大小, F11全屏")
+			}
+			
+			// 显示当前布局参数
+			fmt.Fprintf(v, " | 布局: L%d R%d C%d", 
+				ctx.Layout.LeftPanelWidth, 
+				ctx.Layout.RightPanelWidth, 
+				ctx.Layout.CommandHeight)
 		}
-		
-		// 显示当前布局参数
-		fmt.Fprintf(v, " | 布局: L%d R%d C%d", 
-			ctx.Layout.LeftPanelWidth, 
-			ctx.Layout.RightPanelWidth, 
-			ctx.Layout.CommandHeight)
 	}
 }
 
@@ -1520,15 +1716,20 @@ func handleFileSelection(g *gocui.Gui, v *gocui.View) error {
 // 处理文件浏览器鼠标点击
 func handleFileBrowserClick(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx == nil || globalCtx.Project == nil {
+		// 即使没有项目，也要确保聚焦到文件浏览器
+		g.SetCurrentView("filebrowser")
 		return nil
 	}
+	
+	// 首先聚焦到文件浏览器
+	g.SetCurrentView("filebrowser")
 	
 	// 获取鼠标点击位置
 	_, cy := v.Cursor()
 	
 	// 计算实际点击的行号（考虑标题行和滚动偏移）
-	// 文件浏览器有3行标题：标题、空行、项目名、空行
-	headerLines := 4
+	// 文件浏览器有5行标题：标题行、空行、项目名、提示行、空行
+	headerLines := 5
 	clickedLine := cy - headerLines + fileScroll
 	
 	// 检查点击行是否有效
@@ -1551,6 +1752,8 @@ func handleFileBrowserClick(g *gocui.Gui, v *gocui.View) error {
 			updateFileBrowserView(g, globalCtx)
 			return nil
 		})
+		
+		// 保持在文件浏览器聚焦状态
 		
 	} else {
 		// 点击文件：在代码视图中打开
@@ -1588,9 +1791,12 @@ func handleBreakpointToggle(g *gocui.Gui, v *gocui.View) error {
 
 // 处理代码视图鼠标点击（支持双击设置断点）
 func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {
+	// 首先聚焦到代码视图
+	g.SetCurrentView("code")
+	
 	if globalCtx == nil || globalCtx.Project == nil || globalCtx.Project.CurrentFile == "" {
-		// 如果没有打开文件，执行普通的聚焦处理
-		return mouseFocusHandler(g, v)
+		// 如果没有打开文件，只需要聚焦即可
+		return nil
 	}
 	
 	// 获取点击位置
@@ -1604,7 +1810,7 @@ func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {
 	
 	// 检查是否是有效的代码行
 	if clickedCodeLine < 0 {
-		return mouseFocusHandler(g, v)
+		return nil
 	}
 	
 	// 计算实际的源代码行号（从1开始）
@@ -1628,7 +1834,7 @@ func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {
 			var err error
 			lines, err = readFileContent(globalCtx.Project.CurrentFile)
 			if err != nil {
-				return mouseFocusHandler(g, v)
+				return nil
 			}
 			globalCtx.Project.OpenFiles[globalCtx.Project.CurrentFile] = lines
 		}
@@ -1645,8 +1851,7 @@ func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {
 		}
 	}
 	
-	// 聚焦到代码视图
-	return mouseFocusHandler(g, v)
+	return nil
 }
 
 // 处理命令输入
@@ -2091,8 +2296,13 @@ func getTextFromLine(v *gocui.View, lineNum, startX, endX int) string {
 
 // 鼠标按下处理 - 检测是否开始拖拽
 func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
+	// 首先聚焦到被点击的窗口
+	if v != nil {
+		g.SetCurrentView(v.Name())
+	}
+	
 	if globalCtx == nil || globalCtx.Layout == nil {
-		return mouseFocusHandler(g, v) // 回退到普通聚焦处理
+		return nil
 	}
 	
 	// 获取鼠标位置（简化实现，使用视图相对位置）
@@ -2114,8 +2324,20 @@ func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
 		}
 	}
 	
-	// 如果不是拖拽，执行普通的聚焦处理
-	return mouseFocusHandler(g, v)
+	return nil
+}
+
+// 处理命令窗口鼠标点击
+func handleCommandClick(g *gocui.Gui, v *gocui.View) error {
+	// 聚焦到命令窗口
+	g.SetCurrentView("command")
+	
+	// 标记命令窗口需要重绘（获得焦点时）
+	if globalCtx != nil {
+		globalCtx.CommandDirty = true
+	}
+	
+	return nil
 }
 
 // 鼠标拖拽处理
@@ -2163,6 +2385,9 @@ func main() {
 		CommandDirty:   true,               // 初始时需要重绘
 		LastClickTime:  time.Time{},        // 初始化双击检测时间
 		LastClickLine:  0,                  // 初始化双击检测行号
+		IsFullscreen:   false,              // 初始化全屏状态
+		FullscreenView: "",                 // 初始化全屏视图
+		SavedLayout:    nil,                // 初始化保存的布局
 	}
 	
 	// 设置全局上下文
@@ -2216,6 +2441,16 @@ func main() {
 		log.Panicln(err)
 	}
 
+	// F11全屏切换
+	if err := g.SetKeybinding("", gocui.KeyF11, gocui.ModNone, toggleFullscreenHandler); err != nil {
+		log.Panicln(err)
+	}
+
+	// ESC键退出全屏（全局绑定，优先处理全屏退出）
+	if err := g.SetKeybinding("", gocui.KeyEsc, gocui.ModNone, escapeExitFullscreenHandler); err != nil {
+		log.Panicln(err)
+	}
+
 	// 方向键滚动
 	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, scrollUpHandler); err != nil {
 		log.Panicln(err)
@@ -2255,10 +2490,12 @@ func main() {
 		log.Panicln(err)
 	}
 	
-	// Escape键清空当前输入（在命令窗口中）
-	if err := g.SetKeybinding("command", gocui.KeyEsc, gocui.ModNone, clearCurrentInput); err != nil {
+	// ESC键在命令窗口中的专门处理（优先级高于全局ESC绑定）
+	if err := g.SetKeybinding("command", gocui.KeyEsc, gocui.ModNone, escapeExitFullscreenHandler); err != nil {
 		log.Panicln(err)
 	}
+	
+	// ESC键现在由全局处理函数统一处理（全屏退出或清空命令输入）
 	
 	// g键生成BPF
 	if err := g.SetKeybinding("", 'g', gocui.ModNone, generateBPFHandler); err != nil {
@@ -2324,8 +2561,13 @@ func main() {
 		log.Panicln(err)
 	}
 	
+	// 命令窗口特殊鼠标处理：点击时设置CommandDirty
+	if err := g.SetKeybinding("command", gocui.MouseLeft, gocui.ModNone, handleCommandClick); err != nil {
+		log.Panicln(err)
+	}
+	
 	// 其他窗口的标准鼠标处理
-	viewNames := []string{"registers", "variables", "stack", "command"}
+	viewNames := []string{"registers", "variables", "stack"}
 	
 	for _, viewName := range viewNames {
 		// 鼠标单击聚焦
