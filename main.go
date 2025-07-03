@@ -140,7 +140,7 @@ type SearchResult struct {
 }
 
 var (
-	focusNames = []string{"文件浏览器", "寄存器", "变量", "函数调用堆栈", "代码视图", "内存", "命令"}
+	focusNames = []string{"File Browser", "Registers", "Variables", "Call Stack", "Code View", "Memory", "Command"}
 	// 全局调试器上下文（原版gocui没有UserData字段）
 	globalCtx *DebuggerContext
 )
@@ -179,21 +179,21 @@ func layoutFullscreen(g *gocui.Gui, viewName string, maxX, maxY int) error {
 		// 根据窗口类型设置标题和属性
 		switch viewName {
 		case "filebrowser":
-			v.Title = "文件浏览器 [全屏] - F11/ESC退出"
+			v.Title = "File Browser [Fullscreen] - F11/ESC to Exit"
 		case "code":
-			v.Title = "代码视图 [全屏] - F11/ESC退出"
+			v.Title = "Code View [Fullscreen] - F11/ESC to Exit"
 		case "registers":
-			v.Title = "寄存器 [全屏] - F11/ESC退出"
+			v.Title = "Registers [Fullscreen] - F11/ESC to Exit"
 		case "variables":
-			v.Title = "变量 [全屏] - F11/ESC退出"
+			v.Title = "Variables [Fullscreen] - F11/ESC to Exit"
 		case "stack":
-			v.Title = "函数调用堆栈 [全屏] - F11/ESC退出"
+			v.Title = "Call Stack [Fullscreen] - F11/ESC to Exit"
 		case "command":
-			v.Title = "命令 [全屏] - F11/ESC退出"
+			v.Title = "Command [Fullscreen] - F11/ESC to Exit"
 			v.Editable = true
 			v.Wrap = false
 		default:
-			v.Title = fmt.Sprintf("%s [全屏] - F11/ESC退出", viewName)
+			v.Title = fmt.Sprintf("%s [Fullscreen] - F11/ESC to Exit", viewName)
 		}
 	}
 	
@@ -443,11 +443,11 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 		// 如果当前聚焦的是弹出窗口，直接关闭它
 		popupID := strings.TrimPrefix(v.Name(), "popup_")
 		if err := closePopupWindowWithView(g, globalCtx, popupID); err != nil {
-			debugMsg := fmt.Sprintf("[ERROR] ESC键关闭当前弹出窗口失败: %s, 错误: %v", popupID, err)
-			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
-		} else {
-			debugMsg := fmt.Sprintf("[DEBUG] ESC键成功关闭当前弹出窗口: %s", popupID)
-			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+					debugMsg := fmt.Sprintf("[ERROR] Failed to close current popup window with ESC: %s, error: %v", popupID, err)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+	} else {
+		debugMsg := fmt.Sprintf("[DEBUG] Successfully closed current popup window with ESC: %s", popupID)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 		}
 		globalCtx.CommandDirty = true
 		return nil
@@ -459,11 +459,11 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 		lastPopup := globalCtx.PopupWindows[len(globalCtx.PopupWindows)-1]
 		if err := closePopupWindowWithView(g, globalCtx, lastPopup.ID); err != nil {
 			// 如果关闭失败，记录错误信息
-			debugMsg := fmt.Sprintf("[ERROR] ESC键关闭弹出窗口失败: %s, 错误: %v", lastPopup.ID, err)
+			debugMsg := fmt.Sprintf("[ERROR] Failed to close popup window with ESC: %s, error: %v", lastPopup.ID, err)
 			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 		} else {
 			// 调试信息
-			debugMsg := fmt.Sprintf("[DEBUG] ESC键成功关闭弹出窗口: %s", lastPopup.ID)
+			debugMsg := fmt.Sprintf("[DEBUG] Successfully closed popup window with ESC: %s", lastPopup.ID)
 			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 		}
 		globalCtx.CommandDirty = true
@@ -474,7 +474,7 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 	// 只有在全屏状态下才处理ESC键退出全屏
 	if globalCtx.IsFullscreen {
 		// 调试信息
-		debugMsg := fmt.Sprintf("[DEBUG] ESC键退出全屏: 当前视图=%s, 全屏视图=%s", currentView, globalCtx.FullscreenView)
+		debugMsg := fmt.Sprintf("[DEBUG] ESC key exit fullscreen: current view=%s, fullscreen view=%s", currentView, globalCtx.FullscreenView)
 		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 		globalCtx.CommandDirty = true
 		
@@ -501,7 +501,7 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 	// 检查当前是否在命令窗口
 	if v != nil && v.Name() == "command" {
 		// 调试信息
-		debugMsg := fmt.Sprintf("[DEBUG] ESC键清空命令输入: 当前输入=%s", globalCtx.CurrentInput)
+		debugMsg := fmt.Sprintf("[DEBUG] ESC key clear command input: current input=%s", globalCtx.CurrentInput)
 		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 		globalCtx.CommandDirty = true
 		
@@ -509,7 +509,7 @@ func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {
 	}
 	
 	// 其他情况的调试信息
-	debugMsg := fmt.Sprintf("[DEBUG] ESC键无操作: 视图=%s, 全屏状态=%v", currentView, globalCtx.IsFullscreen)
+	debugMsg := fmt.Sprintf("[DEBUG] ESC key no action: view=%s, fullscreen status=%v", currentView, globalCtx.IsFullscreen)
 	globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 	globalCtx.CommandDirty = true
 	
@@ -578,6 +578,30 @@ func shrinkCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	
+	// 检查最小终端尺寸
+	minWidth, minHeight := 120, 30
+	if maxX < minWidth || maxY < minHeight {
+		// 如果终端太小，显示错误信息
+		if v, err := g.SetView("error", 0, 0, maxX-1, maxY-1); err != nil {
+			if err != gocui.ErrUnknownView {
+				return err
+			}
+			v.Title = "Terminal Too Small"
+		}
+		if v, _ := g.View("error"); v != nil {
+			v.Clear()
+			fmt.Fprintf(v, "\n")
+			fmt.Fprintf(v, "  Terminal window is too small!\n")
+			fmt.Fprintf(v, "\n")
+			fmt.Fprintf(v, "  Current size: %dx%d\n", maxX, maxY)
+			fmt.Fprintf(v, "  Required: %dx%d or larger\n", minWidth, minHeight)
+			fmt.Fprintf(v, "\n")
+			fmt.Fprintf(v, "  Please resize your terminal and try again.\n")
+			fmt.Fprintf(v, "  Press Ctrl+C to exit.\n")
+		}
+		return nil
+	}
+	
 	// 检查是否处于全屏状态
 	if globalCtx != nil && globalCtx.IsFullscreen && globalCtx.FullscreenView != "" {
 		return layoutFullscreen(g, globalCtx.FullscreenView, maxX, maxY)
@@ -624,7 +648,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "状态"
+		v.Title = "Status"
 	}
 	
 	// 文件浏览器窗口 (左侧) - 使用安全的底部坐标
@@ -632,7 +656,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "文件浏览器"
+		v.Title = "File Browser"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 	}
@@ -648,7 +672,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "代码视图"
+		v.Title = "Code View"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 	}
@@ -680,7 +704,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "寄存器"
+		v.Title = "Registers"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 	}
@@ -690,7 +714,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "变量"
+		v.Title = "Variables"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 	}
@@ -700,7 +724,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "函数调用堆栈"
+		v.Title = "Call Stack"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 	}
@@ -715,7 +739,7 @@ func layout(g *gocui.Gui) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "命令"
+		v.Title = "Command"
 		v.Editable = true
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
@@ -740,7 +764,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 func openProject(projectPath string) (*ProjectInfo, error) {
 	// 检查目录是否存在
 	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("项目目录不存在: %s", projectPath)
+		return nil, fmt.Errorf("Project directory does not exist: %s", projectPath)
 	}
 	
 	// 创建项目信息
@@ -873,7 +897,7 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 			// 保存断点到文件
 			if err := saveBreakpoints(ctx); err != nil {
 				// 在命令历史中记录错误
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] 保存断点失败: %v", err))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] Failed to save breakpoints: %v", err))
 				ctx.CommandDirty = true
 			}
 			return
@@ -898,7 +922,7 @@ func addBreakpoint(ctx *DebuggerContext, file string, line int) {
 	// 保存断点到文件
 	if err := saveBreakpoints(ctx); err != nil {
 		// 在命令历史中记录错误
-		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] 保存断点失败: %v", err))
+		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[ERROR] Failed to save breakpoints: %v", err))
 		ctx.CommandDirty = true
 	}
 }
@@ -1181,7 +1205,7 @@ func generateBPF(ctx *DebuggerContext) error {
 	// 保存更新后的断点信息（包含解析出的函数名）
 	if err := saveBreakpoints(ctx); err != nil {
 		// 这不是致命错误，只记录警告
-		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[WARNING] 保存断点失败: %v", err))
+		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("[WARNING] Failed to save breakpoints: %v", err))
 	}
 	
 	return nil
@@ -1502,10 +1526,10 @@ func popupCloseHandler(g *gocui.Gui, v *gocui.View) error {
 	
 	// 关闭弹出窗口
 	if err := closePopupWindowWithView(g, globalCtx, popupID); err != nil {
-		debugMsg := fmt.Sprintf("[ERROR] q键关闭弹出窗口失败: %s, 错误: %v", popupID, err)
+		debugMsg := fmt.Sprintf("[ERROR] Failed to close popup window with q key: %s, error: %v", popupID, err)
 		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 	} else {
-		debugMsg := fmt.Sprintf("[DEBUG] q键成功关闭弹出窗口: %s", popupID)
+		debugMsg := fmt.Sprintf("[DEBUG] Successfully closed popup window with q key: %s", popupID)
 		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 	}
 	globalCtx.CommandDirty = true
@@ -1640,6 +1664,7 @@ func popupScrollDownHandler(g *gocui.Gui, v *gocui.View) error {
 		availableLines = 1
 	}
 	
+	
 	maxScroll := len(popup.Content) - availableLines
 	if maxScroll < 0 {
 		maxScroll = 0
@@ -1700,7 +1725,7 @@ func renderPopupWindows(g *gocui.Gui, ctx *DebuggerContext) error {
 		v.Clear()
 		
 		// 显示关闭按钮提示
-		fmt.Fprintf(v, "\x1b[90m按 q 键关闭 | 拖动标题栏移动窗口\x1b[0m\n")
+		fmt.Fprintf(v, "\x1b[90mPress q to close | Drag title bar to move window\x1b[0m\n")
 		fmt.Fprintln(v, "")
 		
 		// 显示内容 (考虑滚动)
@@ -1721,7 +1746,7 @@ func renderPopupWindows(g *gocui.Gui, ctx *DebuggerContext) error {
 		
 		// 如果有更多内容，显示滚动提示
 		if len(popup.Content) > availableLines {
-			fmt.Fprintf(v, "\x1b[90m[%d/%d] 使用↑↓滚动\x1b[0m", popup.ScrollY+1, len(popup.Content)-availableLines+1)
+			fmt.Fprintf(v, "\x1b[90m[%d/%d] Use ↑↓ to scroll\x1b[0m", popup.ScrollY+1, len(popup.Content)-availableLines+1)
 		}
 		
 		// 将窗口移到最顶层 (通过设置TabStop)
@@ -1743,32 +1768,32 @@ func updateStatusView(g *gocui.Gui, ctx *DebuggerContext) {
 	v.Clear()
 	
 	// 显示调试器状态
-	stateStr := "停止"
+	stateStr := "STOP"
 	if ctx.BpfLoaded {
-		stateStr = "BPF已加载"
+		stateStr = "BPF_LOADED"
 	}
 	if ctx.Running {
-		stateStr = "运行中"
+		stateStr = "RUNNING"
 	}
 	
 	// 显示基本状态信息
-	fmt.Fprintf(v, "RISC-V 内核调试器 | 状态: %s | 当前函数: %s | 地址: 0x%X", 
+	fmt.Fprintf(v, "RISC-V Kernel Debugger | State: %s | Func: %s | Addr: 0x%X", 
 		stateStr, ctx.CurrentFunc, ctx.CurrentAddr)
 	
 	// 显示全屏状态和操作提示
 	if ctx.IsFullscreen {
-		fmt.Fprintf(v, " | 🖥️ 全屏模式: %s | F11/ESC-退出全屏", ctx.FullscreenView)
+		fmt.Fprintf(v, " | Fullscreen: %s | F11/ESC-Exit", ctx.FullscreenView)
 	} else {
 		// 显示拖拽状态和提示
 		if ctx.Layout != nil {
 			if ctx.Layout.IsDragging {
-				fmt.Fprintf(v, " | 🔧 正在调整: %s", getBoundaryName(ctx.Layout.DragBoundary))
+				fmt.Fprintf(v, " | Resizing: %s", getBoundaryName(ctx.Layout.DragBoundary))
 			} else {
-				fmt.Fprint(v, " | 💡 提示: 鼠标拖拽窗口边界调整大小, F11全屏")
+				fmt.Fprint(v, " | Tip: Drag borders to resize, F11 for fullscreen")
 			}
 			
 			// 显示当前布局参数
-			fmt.Fprintf(v, " | 布局: L%d R%d C%d", 
+			fmt.Fprintf(v, " | Layout: L%d R%d C%d", 
 				ctx.Layout.LeftPanelWidth, 
 				ctx.Layout.RightPanelWidth, 
 				ctx.Layout.CommandHeight)
@@ -1780,17 +1805,17 @@ func updateStatusView(g *gocui.Gui, ctx *DebuggerContext) {
 func getBoundaryName(boundary string) string {
 	switch boundary {
 	case "left":
-		return "左侧边界"
+		return "Left Border"
 	case "right":
-		return "右侧边界"
+		return "Right Border"
 	case "bottom":
-		return "底部边界"
+		return "Bottom Border"
 	case "right1":
-		return "寄存器/变量分割线"
+		return "Reg/Var Split"
 	case "right2":
-		return "变量/堆栈分割线"
+		return "Var/Stack Split"
 	default:
-		return "未知边界"
+		return "Unknown Border"
 	}
 }
 
@@ -1803,26 +1828,26 @@ func updateFileBrowserView(g *gocui.Gui, ctx *DebuggerContext) {
 	v.Clear()
 	
 	if g.CurrentView() != nil && g.CurrentView().Name() == "filebrowser" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 文件浏览器 (已聚焦)\x1b[0m")
+		fmt.Fprintln(v, "\x1b[43;30m▶ File Browser (Focused)\x1b[0m")
 	} else {
-		fmt.Fprintln(v, "文件浏览器")
+		fmt.Fprintln(v, "File Browser")
 	}
 	
 	if ctx.Project == nil {
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "未打开项目")
+		fmt.Fprintln(v, "No project opened")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "使用命令打开项目:")
+		fmt.Fprintln(v, "Use command to open project:")
 		fmt.Fprintln(v, "open /path/to/project")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "或者:")
+		fmt.Fprintln(v, "Or:")
 		fmt.Fprintln(v, "open ../tacosys_ko")
 		return
 	}
 	
 	fmt.Fprintln(v, "")
-	fmt.Fprintf(v, "项目: %s\n", filepath.Base(ctx.Project.RootPath))
-	fmt.Fprintln(v, "💡 单击文件打开，单击目录展开/折叠")
+	fmt.Fprintf(v, "Project: %s\n", filepath.Base(ctx.Project.RootPath))
+	fmt.Fprintln(v, "💡 Click file to open, click folder to expand/collapse")
 	fmt.Fprintln(v, "")
 	
 	// 显示文件树
@@ -1946,9 +1971,9 @@ func updateRegistersView(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 	v.Clear()
 	if g.CurrentView() != nil && g.CurrentView().Name() == "registers" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 寄存器 (已聚焦)\x1b[0m")
+		fmt.Fprintln(v, "\x1b[43;30m▶ Registers (Focused)\x1b[0m")
 	} else {
-		fmt.Fprintln(v, "寄存器")
+		fmt.Fprintln(v, "Registers")
 	}
 	lines := []string{
 		fmt.Sprintf("PC: 0x%016x", ctx.CurrentAddr),
@@ -1969,17 +1994,17 @@ func updateVariablesView(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 	v.Clear()
 	if g.CurrentView() != nil && g.CurrentView().Name() == "variables" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 变量 (已聚焦)\x1b[0m")
+		fmt.Fprintln(v, "\x1b[43;30m▶ Variables (Focused)\x1b[0m")
 	} else {
-		fmt.Fprintln(v, "变量")
+		fmt.Fprintln(v, "Variables")
 	}
 	lines := []string{
-		"局部变量:",
+		"Local variables:",
 		"ctx      debugger_ctx_t* 0x7fff1234",
 		"fd       int             3",
 		"ret      int            -1",
 		"...",
-		"", "全局变量:",
+		"", "Global variables:",
 		"g_ctx    debugger_ctx_t* 0x601020",
 		"debug_level int         2",
 		"...",
@@ -1997,9 +2022,9 @@ func updateStackView(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 	v.Clear()
 	if g.CurrentView() != nil && g.CurrentView().Name() == "stack" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 函数调用堆栈 (已聚焦)\x1b[0m")
+		fmt.Fprintln(v, "\x1b[43;30m▶ Call Stack (Focused)\x1b[0m")
 	} else {
-		fmt.Fprintln(v, "函数调用堆栈")
+		fmt.Fprintln(v, "Call Stack")
 	}
 	lines := []string{
 		"#0 taco_sys_init kernel_debugger_tui.c:156",
@@ -2025,31 +2050,31 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 		if ctx.SearchMode {
 			searchStatus := ""
 			if len(ctx.SearchResults) > 0 {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (%d/%d)", 
+				searchStatus = fmt.Sprintf(" | Search: \"%s\" (%d/%d)", 
 					ctx.SearchTerm, ctx.CurrentMatch+1, len(ctx.SearchResults))
 			} else if ctx.SearchTerm != "" {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (无结果)", ctx.SearchTerm)
+				searchStatus = fmt.Sprintf(" | Search: \"%s\" (no results)", ctx.SearchTerm)
 			} else {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\"", ctx.SearchInput)
+				searchStatus = fmt.Sprintf(" | Search: \"%s\"", ctx.SearchInput)
 			}
-			fmt.Fprintf(v, "\x1b[43;30m▶ 代码视图 (已聚焦) %s\x1b[0m\n", searchStatus)
+			fmt.Fprintf(v, "\x1b[43;30m▶ Code View (Focused) %s\x1b[0m\n", searchStatus)
 		} else {
-			fmt.Fprintln(v, "\x1b[43;30m▶ 代码视图 (已聚焦)\x1b[0m")
+			fmt.Fprintln(v, "\x1b[43;30m▶ Code View (Focused)\x1b[0m")
 		}
 	} else {
 		if ctx.SearchMode {
 			searchStatus := ""
 			if len(ctx.SearchResults) > 0 {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (%d/%d)", 
+				searchStatus = fmt.Sprintf(" | Search: \"%s\" (%d/%d)", 
 					ctx.SearchTerm, ctx.CurrentMatch+1, len(ctx.SearchResults))
 			} else if ctx.SearchTerm != "" {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\" (无结果)", ctx.SearchTerm)
+				searchStatus = fmt.Sprintf(" | Search: \"%s\" (no results)", ctx.SearchTerm)
 			} else {
-				searchStatus = fmt.Sprintf(" | 搜索: \"%s\"", ctx.SearchInput)
+				searchStatus = fmt.Sprintf(" | Search: \"%s\"", ctx.SearchInput)
 			}
-			fmt.Fprintf(v, "代码视图%s\n", searchStatus)
+			fmt.Fprintf(v, "Code View%s\n", searchStatus)
 		} else {
-			fmt.Fprintln(v, "代码视图")
+			fmt.Fprintln(v, "Code View")
 		}
 	}
 	
@@ -2061,7 +2086,7 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 			var err error
 			lines, err = readFileContent(ctx.Project.CurrentFile)
 			if err != nil {
-				fmt.Fprintf(v, "无法读取文件: %v\n", err)
+				fmt.Fprintf(v, "Cannot read file: %v\n", err)
 				return
 			}
 			ctx.Project.OpenFiles[ctx.Project.CurrentFile] = lines
@@ -2119,7 +2144,7 @@ func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {
 		
 	} else {
 		// 默认显示汇编代码
-		fmt.Fprintln(v, "汇编代码 (示例)")
+		fmt.Fprintln(v, "Assembly Code (Example)")
 		fmt.Fprintln(v, "")
 		
 		insts := []string{
@@ -2181,24 +2206,24 @@ func updateBreakpointsView(g *gocui.Gui, ctx *DebuggerContext) {
 	v.Clear()
 	
 	if g.CurrentView() != nil && g.CurrentView().Name() == "stack" {
-		fmt.Fprintln(v, "\x1b[43;30m▶ 断点管理 (已聚焦)\x1b[0m")
+		fmt.Fprintln(v, "\x1b[43;30m▶ Breakpoint Manager (Focused)\x1b[0m")
 	} else {
-		fmt.Fprintln(v, "断点管理")
+		fmt.Fprintln(v, "Breakpoint Manager")
 	}
 	
 	if ctx.Project == nil {
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "未打开项目")
+		fmt.Fprintln(v, "No project opened")
 		return
 	}
 	
 	fmt.Fprintln(v, "")
 	if len(ctx.Project.Breakpoints) == 0 {
-		fmt.Fprintln(v, "无断点")
+		fmt.Fprintln(v, "No breakpoints")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "在代码视图中按Enter设置断点")
+		fmt.Fprintln(v, "Press Enter in code view to set breakpoint")
 	} else {
-		fmt.Fprintf(v, "断点列表 (%d个):\n", len(ctx.Project.Breakpoints))
+		fmt.Fprintf(v, "Breakpoint List (%d):\n", len(ctx.Project.Breakpoints))
 		fmt.Fprintln(v, "")
 		
 		for i, bp := range ctx.Project.Breakpoints {
@@ -2210,12 +2235,12 @@ func updateBreakpointsView(g *gocui.Gui, ctx *DebuggerContext) {
 			fileName := filepath.Base(bp.File)
 			fmt.Fprintf(v, "%d. %s %s:%d\n", i+1, status, fileName, bp.Line)
 			if bp.Function != "unknown" {
-				fmt.Fprintf(v, "   函数: %s\n", bp.Function)
+				fmt.Fprintf(v, "   Function: %s\n", bp.Function)
 			}
 		}
 		
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "g-生成BPF  c-清除所有断点")
+		fmt.Fprintln(v, "g-Generate BPF  c-Clear all breakpoints")
 	}
 }
 
@@ -2248,7 +2273,7 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 					if actualInput != ctx.CurrentInput {
 						// 调试信息：记录重要的输入变化
 						if len(actualInput) > 40 && len(ctx.CommandHistory) < 10 {
-							debugInfo := fmt.Sprintf("[DEBUG] 粘贴检测: 长度=%d, 内容=%s", len(actualInput), actualInput)
+							debugInfo := fmt.Sprintf("[DEBUG] Paste detected: length=%d, content=%s", len(actualInput), actualInput)
 							ctx.CommandHistory = append(ctx.CommandHistory, debugInfo)
 						}
 						ctx.CurrentInput = actualInput
@@ -2284,25 +2309,25 @@ func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {
 		// 如果不是聚焦状态，显示简化的帮助信息
 		v.Clear()
 		
-		fmt.Fprintln(v, "命令终端 - 按F6聚焦")
+		fmt.Fprintln(v, "Command Terminal - Press F6 to focus")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "基本命令:")
-		fmt.Fprintln(v, "  help         - 显示帮助")
-		fmt.Fprintln(v, "  open <路径>  - 打开项目")
-		fmt.Fprintln(v, "  clear        - 清屏")
+		fmt.Fprintln(v, "Basic commands:")
+		fmt.Fprintln(v, "  help         - Show help")
+		fmt.Fprintln(v, "  open <path>  - Open project")
+		fmt.Fprintln(v, "  clear        - Clear screen")
 		fmt.Fprintln(v, "")
-		fmt.Fprintln(v, "快捷键: Tab-切换窗口")
+		fmt.Fprintln(v, "Shortcuts: Tab-Switch windows")
 		
 		// 显示项目状态
 		if ctx.Project != nil {
 			fmt.Fprintln(v, "")
-			fmt.Fprintf(v, "项目: %s", filepath.Base(ctx.Project.RootPath))
+			fmt.Fprintf(v, "Project: %s", filepath.Base(ctx.Project.RootPath))
 		}
 		
 		// 显示最近的几条命令历史（如果有的话）
 		if len(ctx.CommandHistory) > 0 {
 			fmt.Fprintln(v, "")
-			fmt.Fprintln(v, "最近命令:")
+			fmt.Fprintln(v, "Recent commands:")
 			// 显示最后3条历史记录
 			start := len(ctx.CommandHistory) - 3
 			if start < 0 {
@@ -2357,7 +2382,7 @@ func copyToClipboard(text string) error {
 		}
 	}
 	
-	return fmt.Errorf("无法访问剪贴板，请安装xclip或xsel")
+	return fmt.Errorf("Cannot access clipboard, please install xclip or xsel")
 }
 
 func copyWithOSC52(text string) error {
@@ -2795,7 +2820,7 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	
 	// 调试信息：记录截断检测
 	if len(command) > 40 && strings.Contains(command, "linux-6.") {
-		debugInfo := fmt.Sprintf("[DEBUG] 路径命令长度=%d: %s", len(command), command)
+		debugInfo := fmt.Sprintf("[DEBUG] Path command length=%d: %s", len(command), command)
 		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugInfo)
 	}
 	
@@ -2819,60 +2844,60 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	switch cmd {
 	case "help", "h":
 		output = []string{
-			"🎯 RISC-V 内核调试器 - 使用指南",
+			"🎯 RISC-V Kernel Debugger - User Guide",
 			"",
-			"📋 可用命令:",
-			"  help         - 显示此帮助信息",
-			"  clear        - 清屏",
-			"  open <路径>  - 打开项目目录（支持带空格的路径）",
-			"  bp           - 查看所有断点（弹出窗口）",
-			"  bp clear     - 清除所有断点",
-			"  breakpoints  - 查看所有断点（同bp）",
-			"  breakpoint   - 清除所有断点（同bp clear）",
-			"  generate     - 生成BPF调试代码和脚本",
-			"  compile      - 编译BPF代码到目标文件（同build）",
-			"  build        - 编译BPF代码到目标文件（同compile）",
-			"  close        - 关闭当前项目",
-			"  pwd          - 显示当前工作目录",
+			"📋 Available Commands:",
+			"  help         - Show this help information",
+			"  clear        - Clear screen",
+			"  open <path>  - Open project directory (supports paths with spaces)",
+			"  bp           - View all breakpoints (popup window)",
+			"  bp clear     - Clear all breakpoints",
+			"  breakpoints  - View all breakpoints (same as bp)",
+			"  breakpoint   - Clear all breakpoints (same as bp clear)",
+			"  generate     - Generate BPF debug code and scripts",
+			"  compile      - Compile BPF code to object file (same as build)",
+			"  build        - Compile BPF code to object file (same as compile)",
+			"  close        - Close current project",
+			"  pwd          - Show current working directory",
 			"",
-			"🔥 调试工作流程:",
-			"  1. open <项目路径>     - 打开内核驱动项目",
-			"  2. 双击代码行设置断点    - 自动解析函数名",
-			"  3. generate           - 生成BPF代码和脚本",
-			"  4. compile            - 编译BPF代码(可选，脚本会自动编译)",
-			"  5. 退出调试器执行:      sudo ./load_debug_bpf.sh",
-			"  6. 查看调试输出:       sudo cat /sys/kernel/debug/tracing/trace_pipe",
-			"  7. 卸载调试程序:       sudo ./unload_debug_bpf.sh",
+			"🔥 Debug Workflow:",
+			"  1. open <project_path>    - Open kernel driver project",
+			"  2. Double-click code line - Set breakpoint (auto-parse function name)",
+			"  3. generate              - Generate BPF code and scripts",
+			"  4. compile               - Compile BPF code (optional, script auto-compiles)",
+			"  5. Exit debugger and run: sudo ./load_debug_bpf.sh",
+			"  6. View debug output:     sudo cat /sys/kernel/debug/tracing/trace_pipe",
+			"  7. Unload debug program:  sudo ./unload_debug_bpf.sh",
 			"",
-			"🎛️ 断点功能:",
-			"  • 双击代码行设置/切换断点（自动解析函数名）",
-			"  • Enter键也可设置断点",
-			"  • 断点自动保存到.debug_breakpoints.json",
-			"  • 重新打开项目时自动加载断点",
-			"  • generate生成完整的BPF程序和加载脚本",
+			"🎛️ Breakpoint Features:",
+			"  • Double-click code line to set/toggle breakpoint (auto-parse function name)",
+			"  • Enter key also sets breakpoint",
+			"  • Breakpoints auto-saved to .debug_breakpoints.json",
+			"  • Auto-load breakpoints when reopening project",
+			"  • generate creates complete BPF program and load scripts",
 			"",
-			"🏗️ BPF编译和平台支持:",
-			"  • BPF编译目标: BPF虚拟机字节码(平台无关)",
-			"  • 无需交叉编译: clang -target bpf 即可",
-			"  • 支持架构: x86_64, ARM64, RISC-V64, 等",
-			"  • 内核JIT: 自动编译到目标架构机器码",
-			"  • RISC-V: Linux 5.13+ 内核已支持BPF JIT",
-			"  • 编译器要求: clang 10+ 推荐",
+			"🏗️ BPF Compilation and Platform Support:",
+			"  • BPF compilation target: BPF virtual machine bytecode (platform-independent)",
+			"  • No cross-compilation needed: clang -target bpf works",
+			"  • Supported architectures: x86_64, ARM64, RISC-V64, etc.",
+			"  • Kernel JIT: auto-compile to target architecture machine code",
+			"  • RISC-V: Linux 5.13+ kernel supports BPF JIT",
+			"  • Compiler requirement: clang 10+ recommended",
 			"",
-			"🔍 代码搜索功能:",
-			"  Ctrl+F - 在代码视图中启动搜索",
-			"  输入关键字 - 实时输入搜索词",
-			"  回车 - 执行搜索/跳转下一个匹配项",
-			"  F3 - 跳转到下一个匹配项",
-			"  ESC - 退出搜索模式",
-			"  支持大小写不敏感搜索和高亮显示",
+			"🔍 Code Search Features:",
+			"  Ctrl+F - Start search in code view",
+			"  Type keywords - Real-time input search term",
+			"  Enter - Execute search/jump to next match",
+			"  F3 - Jump to next match",
+			"  ESC - Exit search mode",
+			"  Support case-insensitive search and highlighting",
 			"",
-			"⌨️ 导航快捷键:",
-			"  Tab - 切换窗口",
-			"  F1-F6 - 直接切换到指定窗口",
-			"  F11 - 全屏切换",
-			"  ESC - 退出全屏/关闭弹出窗口",
-			"  q - 关闭弹出窗口",
+			"⌨️ Navigation Shortcuts:",
+			"  Tab - Switch windows",
+			"  F1-F6 - Direct switch to specific window",
+			"  F11 - Toggle fullscreen",
+			"  ESC - Exit fullscreen/close popup window",
+			"  q - Close popup window",
 		}
 		
 	case "clear":
@@ -2889,34 +2914,34 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		
 	case "open":
 		if args == "" {
-			output = []string{"错误: 用法: open <项目路径>", "提示: 支持带空格的路径，如: open /path/to/folder with spaces"}
+			output = []string{"Error: Usage: open <project_path>", "Tip: Supports paths with spaces, e.g.: open /path/to/folder with spaces"}
 		} else {
 			projectPath := args  // 直接使用args，保留所有空格
-			output = append(output, fmt.Sprintf("正在处理路径: %s", projectPath))
+			output = append(output, fmt.Sprintf("Processing path: %s", projectPath))
 			
 			// 如果是相对路径，转换为绝对路径
 			if !filepath.IsAbs(projectPath) {
 				wd, _ := os.Getwd()
 				projectPath = filepath.Join(wd, projectPath)
-				output = append(output, fmt.Sprintf("转换为绝对路径: %s", projectPath))
+				output = append(output, fmt.Sprintf("Converting to absolute path: %s", projectPath))
 			}
 			
 			// 检查路径是否存在
 			if _, err := os.Stat(projectPath); os.IsNotExist(err) {
-				output = []string{fmt.Sprintf("错误: 路径不存在: %s", projectPath)}
+				output = []string{fmt.Sprintf("Error: Path does not exist: %s", projectPath)}
 			} else {
-				output = append(output, "路径存在，开始打开项目...")
+				output = append(output, "Path exists, opening project...")
 				
 				project, err := openProject(projectPath)
 				if err != nil {
-					output = append(output, fmt.Sprintf("错误: 打开项目失败: %v", err))
+					output = append(output, fmt.Sprintf("Error: Failed to open project: %v", err))
 				} else {
 					globalCtx.Project = project
 					fileCount := countFiles(project.FileTree)
 					output = append(output, []string{
-						fmt.Sprintf("成功打开项目: %s", filepath.Base(projectPath)),
-						fmt.Sprintf("找到 %d 个文件", fileCount),
-						"使用F1切换到文件浏览器查看文件树",
+						fmt.Sprintf("Successfully opened project: %s", filepath.Base(projectPath)),
+						fmt.Sprintf("Found %d files", fileCount),
+						"Use F1 to switch to file browser to view file tree",
 					}...)
 				}
 			}
@@ -2924,16 +2949,16 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		
 	case "generate", "g":
 		if globalCtx.Project == nil {
-			output = []string{"错误: 请先打开项目"}
+			output = []string{"Error: Please open a project first"}
 		} else {
 			err := generateBPF(globalCtx)
 			if err != nil {
-				output = []string{fmt.Sprintf("错误: 生成BPF失败: %v", err)}
+				output = []string{fmt.Sprintf("Error: Failed to generate BPF: %v", err)}
 			} else {
 				output = []string{
-					"成功: BPF代码生成完成",
-					"文件: debug_breakpoints.bpf.c",
-					"提示: 使用 'compile' 命令编译BPF代码",
+					"Success: BPF code generation completed",
+					"File: debug_breakpoints.bpf.c",
+					"Tip: Use 'compile' command to compile BPF code",
 				}
 				globalCtx.BpfLoaded = true
 			}
@@ -2941,23 +2966,23 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		
 	case "compile", "build":
 		if globalCtx.Project == nil {
-			output = []string{"错误: 请先打开项目"}
+			output = []string{"Error: Please open a project first"}
 		} else {
 			err := compileBPF(globalCtx)
 			if err != nil {
-				output = []string{fmt.Sprintf("错误: 编译BPF失败: %v", err)}
+				output = []string{fmt.Sprintf("Error: Failed to compile BPF: %v", err)}
 			} else {
 				output = []string{
-					"成功: BPF代码编译完成",
-					"文件: debug_breakpoints.bpf.o",
+					"Success: BPF code compilation completed",
+					"File: debug_breakpoints.bpf.o",
 					"",
-					"🔥 BPF编译说明:",
-					"• BPF字节码是平台无关的，无需交叉编译",
-					"• 编译目标是BPF虚拟机，不是物理CPU架构",
-					"• Linux内核会JIT编译到对应架构(x86/ARM/RISC-V)",
-					"• RISC-V64平台已获得Linux内核BPF JIT支持",
+					"🔥 BPF Compilation Notes:",
+					"• BPF bytecode is platform-independent, no cross-compilation needed",
+					"• Compilation target is BPF virtual machine, not physical CPU architecture",
+					"• Linux kernel will JIT compile to corresponding architecture (x86/ARM/RISC-V)",
+					"• RISC-V64 platform has Linux kernel BPF JIT support",
 					"",
-					"下一步: 使用 sudo ./load_debug_bpf.sh 加载程序",
+					"Next step: Use sudo ./load_debug_bpf.sh to load program",
 				}
 			}
 		}
@@ -2968,12 +2993,12 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
 			// 保存清空后的断点列表
 			if err := saveBreakpoints(globalCtx); err != nil {
-				output = []string{fmt.Sprintf("警告: 清除断点成功但保存失败: %v", err)}
+				output = []string{fmt.Sprintf("Warning: Breakpoints cleared but save failed: %v", err)}
 			} else {
-				output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
+				output = []string{fmt.Sprintf("Success: Cleared %d breakpoints", count)}
 			}
 		} else {
-			output = []string{"提示: 没有打开的项目"}
+			output = []string{"Tip: No project opened"}
 		}
 		
 	case "bp":
@@ -2984,21 +3009,21 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 				globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
 				// 保存清空后的断点列表
 				if err := saveBreakpoints(globalCtx); err != nil {
-					output = []string{fmt.Sprintf("警告: 清除断点成功但保存失败: %v", err)}
+					output = []string{fmt.Sprintf("Warning: Breakpoints cleared but save failed: %v", err)}
 				} else {
-					output = []string{fmt.Sprintf("成功: 已清除 %d 个断点", count)}
+					output = []string{fmt.Sprintf("Success: Cleared %d breakpoints", count)}
 				}
 			} else {
-				output = []string{"提示: 没有打开的项目"}
+				output = []string{"Tip: No project opened"}
 			}
 		} else {
 			// bp - 查看断点（默认行为）
 			if globalCtx.Project == nil {
-				output = []string{"错误: 请先打开项目"}
+				output = []string{"Error: Please open a project first"}
 			} else {
 				// 创建断点查看弹出窗口
 				showBreakpointsPopup(globalCtx)
-				output = []string{"断点查看窗口已打开"}
+				output = []string{"Breakpoint viewer window opened"}
 			}
 		}
 		
@@ -3006,36 +3031,36 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		if globalCtx.Project != nil {
 			projectName := filepath.Base(globalCtx.Project.RootPath)
 			globalCtx.Project = nil
-			output = []string{fmt.Sprintf("成功: 已关闭项目 %s", projectName)}
+			output = []string{fmt.Sprintf("Success: Closed project %s", projectName)}
 		} else {
-			output = []string{"提示: 没有打开的项目"}
+			output = []string{"Tip: No project opened"}
 		}
 		
 	case "breakpoints":
 		if globalCtx.Project == nil {
-			output = []string{"错误: 请先打开项目"}
+			output = []string{"Error: Please open a project first"}
 		} else {
 			// 创建断点查看弹出窗口
 			showBreakpointsPopup(globalCtx)
-			output = []string{"断点查看窗口已打开"}
+			output = []string{"Breakpoint viewer window opened"}
 		}
 		
 	case "status":
 		output = []string{
-			fmt.Sprintf("调试器状态: %s", globalCtx.CurrentFunc),
-			fmt.Sprintf("当前地址: 0x%X", globalCtx.CurrentAddr),
+			fmt.Sprintf("Debugger status: %s", globalCtx.CurrentFunc),
+			fmt.Sprintf("Current address: 0x%X", globalCtx.CurrentAddr),
 		}
 		if globalCtx.Project != nil {
-			output = append(output, fmt.Sprintf("项目: %s", filepath.Base(globalCtx.Project.RootPath)))
-			output = append(output, fmt.Sprintf("断点数: %d", len(globalCtx.Project.Breakpoints)))
+			output = append(output, fmt.Sprintf("Project: %s", filepath.Base(globalCtx.Project.RootPath)))
+			output = append(output, fmt.Sprintf("Breakpoints: %d", len(globalCtx.Project.Breakpoints)))
 		} else {
-			output = append(output, "项目: 未打开")
+			output = append(output, "Project: Not opened")
 		}
 		
 	default:
 		output = []string{
 			fmt.Sprintf("bash: %s: command not found", cmd),
-			"输入 'help' 查看可用命令",
+			"Type 'help' to see available commands",
 		}
 	}
 	
@@ -3080,23 +3105,23 @@ func showBreakpointsPopup(ctx *DebuggerContext) {
 	
 	if len(ctx.Project.Breakpoints) == 0 {
 		content = []string{
-			"当前没有设置断点",
+			"No breakpoints set currently",
 			"",
-			"使用方法:",
-			"• 在代码视图中双击代码行设置断点",
-			"• 按Enter键也可以设置断点",
-			"• 再次点击相同行可切换断点启用/禁用状态",
+			"Usage:",
+			"• Double-click code line in code view to set breakpoint",
+			"• Press Enter key also sets breakpoint",
+			"• Click same line again to toggle breakpoint enable/disable status",
 		}
 	} else {
-		content = append(content, fmt.Sprintf("共有 %d 个断点:", len(ctx.Project.Breakpoints)))
+		content = append(content, fmt.Sprintf("Total %d breakpoints:", len(ctx.Project.Breakpoints)))
 		content = append(content, "")
-		content = append(content, "状态 | 文件 | 行号 | 函数")
-		content = append(content, "---- | ---- | ---- | ----")
+		content = append(content, "Status | File | Line | Function")
+		content = append(content, "------ | ---- | ---- | --------")
 		
 		for i, bp := range ctx.Project.Breakpoints {
-			status := "✓ 启用"
+			status := "✓ Enabled"
 			if !bp.Enabled {
-				status = "✗ 禁用"
+				status = "✗ Disabled"
 			}
 			
 			fileName := filepath.Base(bp.File)
@@ -3111,12 +3136,12 @@ func showBreakpointsPopup(ctx *DebuggerContext) {
 		}
 		
 		content = append(content, "")
-		content = append(content, "操作说明:")
-		content = append(content, "• 断点会自动保存到 .debug_breakpoints.json")
-		content = append(content, "• 重新打开项目时会自动加载断点")
-		content = append(content, "• 使用命令 'generate' 生成BPF调试代码")
+		content = append(content, "Operations:")
+		content = append(content, "• Breakpoints auto-saved to .debug_breakpoints.json")
+		content = append(content, "• Auto-load breakpoints when reopening project")
+		content = append(content, "• Use 'generate' command to create BPF debug code")
 		content = append(content, "")
-		content = append(content, "🔥 关闭窗口: 按 q 键 或 点击任意窗口边界外区域")
+		content = append(content, "🔥 Close window: Press q key or click outside window border")
 	}
 	
 	// 计算合适的窗口大小
@@ -3130,7 +3155,7 @@ func showBreakpointsPopup(ctx *DebuggerContext) {
 	}
 	
 	// 创建弹出窗口
-	popup := createPopupWindow(ctx, "breakpoints", "断点查看器", width, height, content)
+	popup := createPopupWindow(ctx, "breakpoints", "Breakpoint Viewer", width, height, content)
 	showPopupWindow(ctx, popup)
 }
 
@@ -3147,7 +3172,7 @@ func handleCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {
 			if g.CurrentView() != nil {
 				currentViewName = g.CurrentView().Name()
 			}
-			debugInfo := fmt.Sprintf("[DEBUG] 点号输入，视图: %s, 当前输入长度: %d", currentViewName, len(globalCtx.CurrentInput))
+			debugInfo := fmt.Sprintf("[DEBUG] Dot input, view: %s, current input length: %d", currentViewName, len(globalCtx.CurrentInput))
 			globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugInfo)
 			globalCtx.CommandDirty = true
 		}
@@ -3204,16 +3229,16 @@ func startSearchHandler(g *gocui.Gui, v *gocui.View) error {
 	// 只在代码视图中启动搜索
 	if v != nil && v.Name() == "code" {
 		if globalCtx.Project == nil || globalCtx.Project.CurrentFile == "" {
-			// 在命令历史中显示提示
-			globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[INFO] 请先打开一个文件才能搜索")
-			globalCtx.CommandDirty = true
-			return nil
+					// 在命令历史中显示提示
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[INFO] Please open a file first to search")
+		globalCtx.CommandDirty = true
+		return nil
 		}
 		
 		startSearchMode(globalCtx)
 		
 		// 在命令历史中显示搜索提示
-		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] 搜索模式已启动，输入关键字并按回车搜索，ESC退出")
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] Search mode activated, type keywords and press Enter to search, ESC to exit")
 		globalCtx.CommandDirty = true
 	}
 	
@@ -3269,10 +3294,10 @@ func handleSearchEnter(g *gocui.Gui, v *gocui.View) error {
 				// 显示搜索结果统计
 				if len(globalCtx.SearchResults) > 0 {
 					globalCtx.CommandHistory = append(globalCtx.CommandHistory, 
-						fmt.Sprintf("[SEARCH] 找到 %d 个匹配项", len(globalCtx.SearchResults)))
+						fmt.Sprintf("[SEARCH] Found %d matches", len(globalCtx.SearchResults)))
 				} else {
 					globalCtx.CommandHistory = append(globalCtx.CommandHistory, 
-						fmt.Sprintf("[SEARCH] 未找到匹配项: \"%s\"", globalCtx.SearchTerm))
+						fmt.Sprintf("[SEARCH] No matches found: \"%s\"", globalCtx.SearchTerm))
 				}
 				globalCtx.CommandDirty = true
 			} else {
@@ -3294,7 +3319,7 @@ func handleSearchEscape(g *gocui.Gui, v *gocui.View) error {
 	if globalCtx.SearchMode {
 		// 退出搜索模式
 		exitSearchMode(globalCtx)
-		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] 已退出搜索模式")
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, "[SEARCH] Search mode exited")
 		globalCtx.CommandDirty = true
 		return nil
 	}
@@ -3334,14 +3359,14 @@ func generateBPFHandler(g *gocui.Gui, v *gocui.View) error {
 		// 在命令窗口显示错误
 		if cmdView, err := g.View("command"); err == nil {
 			cmdView.Clear()
-			fmt.Fprintf(cmdView, "生成BPF失败: %v\n", err)
+			fmt.Fprintf(cmdView, "Failed to generate BPF: %v\n", err)
 		}
 	} else {
 		globalCtx.BpfLoaded = true
 		// 在命令窗口显示成功
 		if cmdView, err := g.View("command"); err == nil {
 			cmdView.Clear()
-			fmt.Fprintln(cmdView, "BPF代码生成成功!")
+			fmt.Fprintln(cmdView, "BPF code generation successful!")
 		}
 	}
 	
@@ -3356,7 +3381,7 @@ func clearBreakpointsHandler(g *gocui.Gui, v *gocui.View) error {
 		// 在命令窗口显示消息
 		if cmdView, err := g.View("command"); err == nil {
 			cmdView.Clear()
-			fmt.Fprintln(cmdView, "已清除所有断点")
+			fmt.Fprintln(cmdView, "All breakpoints cleared")
 		}
 	}
 	
@@ -3439,12 +3464,12 @@ func mouseSelectEndHandler(g *gocui.Gui, v *gocui.View) error {
 		if err := copyToClipboard(selectedText); err != nil {
 			// 在命令窗口显示错误
 			if cmdView, err := g.View("command"); err == nil {
-				fmt.Fprintf(cmdView, "\n复制失败: %v", err)
+				fmt.Fprintf(cmdView, "\nCopy failed: %v", err)
 			}
 		} else {
 			// 在命令窗口显示成功信息
 			if cmdView, err := g.View("command"); err == nil {
-				fmt.Fprintf(cmdView, "\n已复制选中文本: %.30s...", selectedText)
+				fmt.Fprintf(cmdView, "\nCopied selected text: %.30s...", selectedText)
 			}
 		}
 	}
@@ -3566,8 +3591,8 @@ func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {
 			if len(globalCtx.PopupWindows) > 0 {
 				lastPopup := globalCtx.PopupWindows[len(globalCtx.PopupWindows)-1]
 				if err := closePopupWindowWithView(g, globalCtx, lastPopup.ID); err == nil {
-					debugMsg := fmt.Sprintf("[DEBUG] 点击外部区域关闭弹出窗口: %s", lastPopup.ID)
-					globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
+							debugMsg := fmt.Sprintf("[DEBUG] Click outside area to close popup window: %s", lastPopup.ID)
+		globalCtx.CommandHistory = append(globalCtx.CommandHistory, debugMsg)
 					globalCtx.CommandDirty = true
 				}
 				return nil
