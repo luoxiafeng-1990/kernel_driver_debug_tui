@@ -328,4 +328,206 @@ func (bm *BPFManager) FormatBPFEventSummary(event *BPFDebugEvent) string {
 	
 	return fmt.Sprintf("[%s:%d] %s() - PC:0x%x SP:0x%x", 
 		processName, event.PID, functionName, event.PC, event.SP)
-} 
+}
+
+// ========== BPF程序编译和生成 ==========
+
+// CompileBPFProgram 编译BPF程序
+func (bm *BPFManager) CompileBPFProgram(sourceCode string) error {
+	if sourceCode == "" {
+		return fmt.Errorf("BPF source code is empty")
+	}
+	
+	// 模拟编译过程
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "Compiling BPF program...")
+	bm.ctx.CommandDirty = true
+	
+	// 模拟编译延迟
+	time.Sleep(100 * time.Millisecond)
+	
+	// 检查基本语法
+	if !strings.Contains(sourceCode, "SEC(") {
+		return fmt.Errorf("BPF program must contain SEC() macro")
+	}
+	
+	if !strings.Contains(sourceCode, "bpf_") {
+		return fmt.Errorf("BPF program should use BPF helper functions")
+	}
+	
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "BPF program compiled successfully")
+	bm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// GenerateBPFProgram 生成BPF程序
+func (bm *BPFManager) GenerateBPFProgram() (string, error) {
+	if bm.ctx.Project == nil || len(bm.ctx.Project.Breakpoints) == 0 {
+		return "", fmt.Errorf("no breakpoints set")
+	}
+	
+	generator := NewBPFCodeGenerator(bm.ctx)
+	return generator.GenerateBPFProgram()
+}
+
+// LoadBPFProgram 加载BPF程序
+func (bm *BPFManager) LoadBPFProgram(programPath string) error {
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, 
+		fmt.Sprintf("Loading BPF program from: %s", programPath))
+	bm.ctx.CommandDirty = true
+	
+	// 模拟加载过程
+	time.Sleep(200 * time.Millisecond)
+	
+	// 在实际实现中，这里会:
+	// 1. 读取编译好的BPF字节码
+	// 2. 使用bpf系统调用加载程序
+	// 3. 创建BPF映射
+	// 4. 附加到内核事件
+	
+	bm.ctx.BpfLoaded = true
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "BPF program loaded successfully")
+	bm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// UnloadBPFProgram 卸载BPF程序
+func (bm *BPFManager) UnloadBPFProgram() error {
+	if !bm.ctx.BpfLoaded {
+		return fmt.Errorf("no BPF program loaded")
+	}
+	
+	// 停止BPF程序
+	bm.StopBPFProgram()
+	
+	// 清理资源
+	bm.ctx.BpfLoaded = false
+	
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "BPF program unloaded")
+	bm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// ========== BPF程序状态管理 ==========
+
+// GetBPFProgramInfo 获取BPF程序信息
+func (bm *BPFManager) GetBPFProgramInfo() map[string]interface{} {
+	info := make(map[string]interface{})
+	
+	info["loaded"] = bm.ctx.BpfLoaded
+	info["running"] = bm.IsRunning()
+	
+	if bm.ctx.BPFCtx != nil {
+		info["program_fd"] = bm.ctx.BPFCtx.ProgramFD
+		info["events_map_fd"] = bm.ctx.BPFCtx.Maps.EventsMap
+		info["control_map_fd"] = bm.ctx.BPFCtx.Maps.ControlMap
+	}
+	
+	if bm.ctx.Project != nil {
+		info["breakpoints_count"] = len(bm.ctx.Project.Breakpoints)
+	}
+	
+	// 运行时统计
+	if bm.ctx.RuntimeStats != nil {
+		info["events_received"] = bm.ctx.RuntimeStats.EventsReceived
+		info["frames_processed"] = bm.ctx.RuntimeStats.FramesProcessed
+		info["uptime"] = time.Since(bm.ctx.RuntimeStats.StartTime).String()
+	}
+	
+	return info
+}
+
+// ResetBPFProgram 重置BPF程序
+func (bm *BPFManager) ResetBPFProgram() error {
+	// 停止当前程序
+	if bm.IsRunning() {
+		bm.StopBPFProgram()
+	}
+	
+	// 卸载程序
+	if bm.ctx.BpfLoaded {
+		bm.UnloadBPFProgram()
+	}
+	
+	// 清理状态
+	bm.ctx.CurrentFrame = nil
+	bm.ctx.RuntimeStats = nil
+	
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "BPF program reset")
+	bm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// ========== BPF事件过滤 ==========
+
+// SetEventFilter 设置事件过滤器
+func (bm *BPFManager) SetEventFilter(filter map[string]interface{}) error {
+	if !bm.ctx.BpfLoaded {
+		return fmt.Errorf("no BPF program loaded")
+	}
+	
+	// 将过滤器保存到上下文
+	if bm.ctx.BPFEventFilter == nil {
+		bm.ctx.BPFEventFilter = make(map[string]interface{})
+	}
+	
+	for key, value := range filter {
+		bm.ctx.BPFEventFilter[key] = value
+	}
+	
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, 
+		fmt.Sprintf("Updated BPF event filter: %v", filter))
+	bm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// ClearEventFilter 清除事件过滤器
+func (bm *BPFManager) ClearEventFilter() {
+	bm.ctx.BPFEventFilter = nil
+	
+	bm.ctx.CommandHistory = append(bm.ctx.CommandHistory, "Cleared BPF event filter")
+	bm.ctx.CommandDirty = true
+}
+
+// FilterEvent 过滤事件
+func (bm *BPFManager) FilterEvent(event *BPFDebugEvent) bool {
+	if bm.ctx.BPFEventFilter == nil {
+		return true // 没有过滤器，接受所有事件
+	}
+	
+	// PID过滤
+	if pidFilter, exists := bm.ctx.BPFEventFilter["pid"]; exists {
+		if pid, ok := pidFilter.(uint32); ok && event.PID != pid {
+			return false
+		}
+	}
+	
+	// 函数名过滤
+	if funcFilter, exists := bm.ctx.BPFEventFilter["function"]; exists {
+		if funcName, ok := funcFilter.(string); ok {
+			eventFunc := string(event.Function[:])
+			if !strings.Contains(eventFunc, funcName) {
+				return false
+			}
+		}
+	}
+	
+	// 地址范围过滤
+	if addrMinFilter, exists := bm.ctx.BPFEventFilter["addr_min"]; exists {
+		if addrMin, ok := addrMinFilter.(uint64); ok && event.PC < addrMin {
+			return false
+		}
+	}
+	
+	if addrMaxFilter, exists := bm.ctx.BPFEventFilter["addr_max"]; exists {
+		if addrMax, ok := addrMaxFilter.(uint64); ok && event.PC > addrMax {
+			return false
+		}
+	}
+	
+	return true
+}

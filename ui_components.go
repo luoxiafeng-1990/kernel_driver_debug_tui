@@ -288,37 +288,37 @@ func (ui *UIManager) UpdateStatusView(v *gocui.View) error {
 	// 调试模式状态
 	switch ui.ctx.DebugMode {
 	case "live":
-		statusParts = append(statusParts, "🟢 实时")
+		statusParts = append(statusParts, "🟢 Live")
 	case "recording":
-		statusParts = append(statusParts, "🔴 录制中")
+		statusParts = append(statusParts, "🔴 Recording")
 	case "playback":
-		statusParts = append(statusParts, "▶️  回放")
+		statusParts = append(statusParts, "▶️  Playback")
 	default:
-		statusParts = append(statusParts, "⚪ 未知")
+		statusParts = append(statusParts, "⚪ Unknown")
 	}
 	
 	// BPF程序状态
 	bpfManager := NewBPFManager(ui.ctx)
 	if bpfManager.IsRunning() {
-		statusParts = append(statusParts, "BPF: 运行中")
+		statusParts = append(statusParts, "BPF: Running")
 	} else {
-		statusParts = append(statusParts, "BPF: 停止")
+		statusParts = append(statusParts, "BPF: Stopped")
 	}
 	
 	// 断点信息
 	if ui.ctx.Project != nil {
-		statusParts = append(statusParts, fmt.Sprintf("断点: %d", len(ui.ctx.Project.Breakpoints)))
+		statusParts = append(statusParts, fmt.Sprintf("Breakpoints: %d", len(ui.ctx.Project.Breakpoints)))
 	}
 	
 	// 帧信息
 	sessionManager := NewSessionManager(ui.ctx)
 	frameInfo := sessionManager.GetCurrentFrameInfo()
-	if frameInfo != "没有可用的调试会话" {
+	if frameInfo != "No debug session available" {
 		statusParts = append(statusParts, frameInfo)
 	}
 	
 	// 快捷键提示
-	statusParts = append(statusParts, "F9:上一帧 F10:下一帧 F1:帮助")
+	statusParts = append(statusParts, "F9:PrevFrame F10:NextFrame F1:Help")
 	
 	fmt.Fprint(v, strings.Join(statusParts, " | "))
 	

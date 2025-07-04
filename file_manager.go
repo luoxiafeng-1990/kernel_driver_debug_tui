@@ -525,4 +525,412 @@ func (fm *FileManager) guessFunctionName(content []string, lineIndex int) string
 	}
 	
 	return "unknown_function"
-} 
+}
+
+// ========== 文件搜索功能 ==========
+
+// SearchInFiles 在文件中搜索文本
+func (fm *FileManager) SearchInFiles(searchTerm string, searchInAllFiles bool) (map[string][]SearchResult, error) {
+	results := make(map[string][]SearchResult)
+	
+	if fm.ctx.Project == nil {
+		return results, fmt.Errorf("项目未初始化")
+	}
+	
+	if searchInAllFiles {
+		// 在项目所有文件中搜索
+		return fm.searchInAllProjectFiles(searchTerm), nil
+	} else {
+		// 仅在当前文件中搜索
+		if fm.ctx.Project.CurrentFile == "" {
+			return results, fmt.Errorf("没有打开的文件")
+		}
+		
+		fileResults := fm.searchInSingleFile(fm.ctx.Project.CurrentFile, searchTerm)
+		if len(fileResults) > 0 {
+			results[fm.ctx.Project.CurrentFile] = fileResults
+		}
+		
+		return results, nil
+	}
+}
+
+// searchInAllProjectFiles 在所有项目文件中搜索
+func (fm *FileManager) searchInAllProjectFiles(searchTerm string) map[string][]SearchResult {
+	results := make(map[string][]SearchResult)
+	
+	if fm.ctx.Project.FileTree == nil {
+		return results
+	}
+	
+	fm.searchInFileTree(fm.ctx.Project.FileTree, searchTerm, results)
+	return results
+}
+
+// searchInFileTree 递归搜索文件树
+func (fm *FileManager) searchInFileTree(node *FileNode, searchTerm string, results map[string][]SearchResult) {
+	if node == nil {
+		return
+	}
+	
+	if node.IsDir {
+		for _, child := range node.Children {
+			fm.searchInFileTree(child, searchTerm, results)
+		}
+	} else if fm.isSearchableFile(node.Name) {
+		fileResults := fm.searchInSingleFile(node.Path, searchTerm)
+		if len(fileResults) > 0 {
+			results[node.Path] = fileResults
+		}
+	}
+}
+
+// searchInSingleFile 在单个文件中搜索
+func (fm *FileManager) searchInSingleFile(filePath, searchTerm string) []SearchResult {
+	var results []SearchResult
+	
+	content, err := fm.GetFileContent(filePath)
+	if err != nil {
+		return results
+	}
+	
+	for lineIndex, line := range content {
+		lineNum := lineIndex + 1
+		lowerLine := strings.ToLower(line)
+		lowerTerm := strings.ToLower(searchTerm)
+		
+		startIndex := 0
+		for {
+			index := strings.Index(lowerLine[startIndex:], lowerTerm)
+			if index == -1 {
+				break
+			}
+			
+			actualIndex := startIndex + index
+			result := SearchResult{
+				LineNumber:  lineNum,
+				StartColumn: actualIndex,
+				EndColumn:   actualIndex + len(searchTerm),
+				Text:        line[actualIndex:actualIndex+len(searchTerm)],
+			}
+			
+			results = append(results, result)
+			startIndex = actualIndex + 1
+		}
+	}
+	
+	return results
+}
+
+// isSearchableFile 检查文件是否可搜索
+func (fm *FileManager) isSearchableFile(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	searchableExts := []string{".c", ".cpp", ".h", ".hpp", ".go", ".py", ".js", ".ts", ".java", ".txt", ".md", ".json", ".xml"}
+	
+	for _, searchableExt := range searchableExts {
+		if ext == searchableExt {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// ========== 文件操作扩展 ==========
+
+// SaveFile 保存文件
+func (fm *FileManager) SaveFile(filePath string, content []string) error {
+	if filePath == "" {
+		return fmt.Errorf("文件路径为空")
+	}
+	
+	// 创建目录（如果不存在）
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建目录失败: %v", err)
+	}
+	
+	// 写入文件
+	fileContent := strings.Join(content, "\n")
+	if err := ioutil.WriteFile(filePath, []byte(fileContent), 0644); err != nil {
+		return fmt.Errorf("写入文件失败: %v", err)
+	}
+	
+	// 更新缓存
+	if fm.ctx.Project != nil {
+		fm.ctx.Project.OpenFiles[filePath] = content
+		
+		// 从修改列表中移除
+		modifiedFiles := []string{}
+		for _, modFile := range fm.ctx.Project.ModifiedFiles {
+			if modFile != filePath {
+				modifiedFiles = append(modifiedFiles, modFile)
+			}
+		}
+		fm.ctx.Project.ModifiedFiles = modifiedFiles
+	}
+	
+	return nil
+}
+
+// SaveCurrentFile 保存当前文件
+func (fm *FileManager) SaveCurrentFile() error {
+	if fm.ctx.Project == nil || fm.ctx.Project.CurrentFile == "" {
+		return fmt.Errorf("没有当前文件")
+	}
+	
+	content, exists := fm.ctx.Project.OpenFiles[fm.ctx.Project.CurrentFile]
+	if !exists {
+		return fmt.Errorf("文件内容未加载")
+	}
+	
+	return fm.SaveFile(fm.ctx.Project.CurrentFile, content)
+}
+
+// ReloadFile 重新加载文件
+func (fm *FileManager) ReloadFile(filePath string) error {
+	if filePath == "" {
+		return fmt.Errorf("文件路径为空")
+	}
+	
+	// 从磁盘重新读取
+	content, err := fm.GetFileContent(filePath)
+	if err != nil {
+		return err
+	}
+	
+	// 更新缓存
+	if fm.ctx.Project != nil {
+		fm.ctx.Project.OpenFiles[filePath] = content
+		
+		// 从修改列表中移除
+		modifiedFiles := []string{}
+		for _, modFile := range fm.ctx.Project.ModifiedFiles {
+			if modFile != filePath {
+				modifiedFiles = append(modifiedFiles, modFile)
+			}
+		}
+		fm.ctx.Project.ModifiedFiles = modifiedFiles
+	}
+	
+	return nil
+}
+
+// IsFileModified 检查文件是否已修改
+func (fm *FileManager) IsFileModified(filePath string) bool {
+	if fm.ctx.Project == nil {
+		return false
+	}
+	
+	for _, modFile := range fm.ctx.Project.ModifiedFiles {
+		if modFile == filePath {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// GetModifiedFiles 获取所有修改的文件
+func (fm *FileManager) GetModifiedFiles() []string {
+	if fm.ctx.Project == nil {
+		return []string{}
+	}
+	
+	return fm.ctx.Project.ModifiedFiles
+}
+
+// ========== 断点管理扩展 ==========
+
+// ClearAllBreakpoints 清除所有断点
+func (fm *FileManager) ClearAllBreakpoints() error {
+	if fm.ctx.Project == nil {
+		return fmt.Errorf("项目未初始化")
+	}
+	
+	count := len(fm.ctx.Project.Breakpoints)
+	fm.ctx.Project.Breakpoints = []Breakpoint{}
+	
+	fm.ctx.CommandHistory = append(fm.ctx.CommandHistory, 
+		fmt.Sprintf("清除了 %d 个断点", count))
+	fm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// DisableAllBreakpoints 禁用所有断点
+func (fm *FileManager) DisableAllBreakpoints() error {
+	if fm.ctx.Project == nil {
+		return fmt.Errorf("项目未初始化")
+	}
+	
+	count := 0
+	for i := range fm.ctx.Project.Breakpoints {
+		if fm.ctx.Project.Breakpoints[i].Enabled {
+			fm.ctx.Project.Breakpoints[i].Enabled = false
+			count++
+		}
+	}
+	
+	fm.ctx.CommandHistory = append(fm.ctx.CommandHistory, 
+		fmt.Sprintf("禁用了 %d 个断点", count))
+	fm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// EnableAllBreakpoints 启用所有断点
+func (fm *FileManager) EnableAllBreakpoints() error {
+	if fm.ctx.Project == nil {
+		return fmt.Errorf("项目未初始化")
+	}
+	
+	count := 0
+	for i := range fm.ctx.Project.Breakpoints {
+		if !fm.ctx.Project.Breakpoints[i].Enabled {
+			fm.ctx.Project.Breakpoints[i].Enabled = true
+			count++
+		}
+	}
+	
+	fm.ctx.CommandHistory = append(fm.ctx.CommandHistory, 
+		fmt.Sprintf("启用了 %d 个断点", count))
+	fm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// ExportBreakpoints 导出断点配置
+func (fm *FileManager) ExportBreakpoints() (string, error) {
+	if fm.ctx.Project == nil {
+		return "", fmt.Errorf("项目未初始化")
+	}
+	
+	var lines []string
+	lines = append(lines, "# Breakpoints Configuration")
+	lines = append(lines, "# Format: file:line:function:enabled")
+	lines = append(lines, "")
+	
+	for _, bp := range fm.ctx.Project.Breakpoints {
+		enabled := "disabled"
+		if bp.Enabled {
+			enabled = "enabled"
+		}
+		
+		line := fmt.Sprintf("%s:%d:%s:%s", bp.File, bp.Line, bp.Function, enabled)
+		lines = append(lines, line)
+	}
+	
+	return strings.Join(lines, "\n"), nil
+}
+
+// ImportBreakpoints 导入断点配置
+func (fm *FileManager) ImportBreakpoints(configContent string) error {
+	if fm.ctx.Project == nil {
+		return fmt.Errorf("项目未初始化")
+	}
+	
+	lines := strings.Split(configContent, "\n")
+	imported := 0
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		
+		parts := strings.Split(line, ":")
+		if len(parts) != 4 {
+			continue
+		}
+		
+		file := parts[0]
+		lineNum, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+		
+		function := parts[2]
+		enabled := parts[3] == "enabled"
+		
+		// 添加断点
+		breakpoint := Breakpoint{
+			File:     file,
+			Line:     lineNum,
+			Function: function,
+			Enabled:  enabled,
+		}
+		
+		fm.ctx.Project.Breakpoints = append(fm.ctx.Project.Breakpoints, breakpoint)
+		imported++
+	}
+	
+	fm.ctx.CommandHistory = append(fm.ctx.CommandHistory, 
+		fmt.Sprintf("导入了 %d 个断点", imported))
+	fm.ctx.CommandDirty = true
+	
+	return nil
+}
+
+// ========== 文件统计和分析 ==========
+
+// GetProjectStats 获取项目统计信息
+func (fm *FileManager) GetProjectStats() map[string]interface{} {
+	stats := make(map[string]interface{})
+	
+	if fm.ctx.Project == nil {
+		stats["error"] = "项目未初始化"
+		return stats
+	}
+	
+	stats["project_path"] = fm.ctx.Project.RootPath
+	stats["open_files"] = len(fm.ctx.Project.OpenFiles)
+	stats["modified_files"] = len(fm.ctx.Project.ModifiedFiles)
+	stats["breakpoints"] = len(fm.ctx.Project.Breakpoints)
+	
+	// 统计文件类型
+	fileTypes := make(map[string]int)
+	totalLines := 0
+	totalSize := 0
+	
+	for filePath, content := range fm.ctx.Project.OpenFiles {
+		ext := strings.ToLower(filepath.Ext(filePath))
+		if ext == "" {
+			ext = "none"
+		}
+		fileTypes[ext]++
+		
+		totalLines += len(content)
+		totalSize += len(strings.Join(content, "\n"))
+	}
+	
+	stats["file_types"] = fileTypes
+	stats["total_lines"] = totalLines
+	stats["total_size"] = totalSize
+	
+	// 当前文件信息
+	if fm.ctx.Project.CurrentFile != "" {
+		stats["current_file"] = fm.ctx.Project.CurrentFile
+		if content, exists := fm.ctx.Project.OpenFiles[fm.ctx.Project.CurrentFile]; exists {
+			stats["current_file_lines"] = len(content)
+		}
+	}
+	
+	return stats
+}
+
+// GetFileHistory 获取文件访问历史（模拟）
+func (fm *FileManager) GetFileHistory() []string {
+	// 在实际实现中，这里会维护一个文件访问历史
+	// 现在返回已打开的文件作为历史
+	if fm.ctx.Project == nil {
+		return []string{}
+	}
+	
+	var history []string
+	for filePath := range fm.ctx.Project.OpenFiles {
+		history = append(history, filePath)
+	}
+	
+	return history
+}

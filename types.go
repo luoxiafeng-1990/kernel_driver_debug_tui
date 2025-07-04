@@ -39,11 +39,12 @@ type Breakpoint struct {
 
 // 项目信息
 type ProjectInfo struct {
-	RootPath    string
-	FileTree    *FileNode
-	OpenFiles   map[string][]string // 文件路径 -> 文件内容行数组
-	CurrentFile string
-	Breakpoints []Breakpoint
+	RootPath      string
+	FileTree      *FileNode
+	OpenFiles     map[string][]string // 文件路径 -> 文件内容行数组
+	CurrentFile   string
+	Breakpoints   []Breakpoint
+	ModifiedFiles []string            // 已修改的文件列表
 }
 
 // ========== BPF相关数据结构 ==========
@@ -80,6 +81,15 @@ type BPFContext struct {
 	Maps      BPFMaps
 	Cancel    context.CancelFunc
 	Running   bool
+}
+
+// BPF运行时统计信息
+type RuntimeStats struct {
+	StartTime        time.Time // 开始时间
+	EventsReceived   uint64    // 收到的事件数
+	FramesProcessed  uint64    // 处理的帧数
+	EventsDropped    uint64    // 丢弃的事件数
+	LastEventTime    time.Time // 最后一个事件时间
 }
 
 // ========== 调试帧系统 ==========
@@ -235,6 +245,7 @@ type DebuggerContext struct {
 	CurrentMatch   int           // 当前匹配项索引
 	SearchInput    string        // 搜索输入缓冲区
 	SearchDirty    bool          // 搜索结果是否需要更新
+	SearchHistory  []string      // 搜索历史记录
 	
 	// ========== 调试帧录制回放系统 ==========
 	// 调试模式
@@ -258,6 +269,12 @@ type DebuggerContext struct {
 	BPFDataChannel chan *BPFDebugEvent // BPF事件数据通道
 	BPFCtx         *BPFContext         // BPF程序上下文
 	GUI            *gocui.Gui          // GUI引用（用于更新界面）
+	
+	// BPF运行时统计
+	RuntimeStats   *RuntimeStats       // BPF运行时统计信息
+	
+	// BPF事件过滤器
+	BPFEventFilter map[string]interface{} // BPF事件过滤器
 	
 	// 帧导航状态
 	FrameNavigation struct {

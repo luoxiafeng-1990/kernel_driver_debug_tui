@@ -32,7 +32,7 @@ func main() {
 				// 创建调试器上下文后再初始化项目
 			}()
 		} else {
-			fmt.Printf("错误: 无效的项目路径: %s\n", projectPath)
+			fmt.Printf("Error: Invalid project path: %s\n", projectPath)
 			os.Exit(1)
 		}
 	}
@@ -52,7 +52,7 @@ func main() {
 		CurrentFocus:  0,
 		BpfLoaded:     false,
 		MouseEnabled:  true,
-		CommandHistory: []string{"欢迎使用RISC-V内核调试器 TUI v2.0", "输入 'help' 查看可用命令"},
+		CommandHistory: []string{"Welcome to RISC-V Kernel Debugger TUI v2.0", "Type 'help' to see available commands"},
 		CommandDirty: true,
 		DebugMode:    "live",
 		GUI:          g,
@@ -63,12 +63,15 @@ func main() {
 		projectPath := os.Args[1]
 		fileManager := NewFileManager(ctx)
 		if err := fileManager.InitProject(projectPath); err != nil {
-			ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("自动打开项目失败: %v", err))
-		} else {
-			ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("已自动打开项目: %s", projectPath))
+					ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Failed to auto-open project: %v", err))
+	} else {
+		ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Auto-opened project: %s", projectPath))
 		}
 		ctx.CommandDirty = true
 	}
+
+	// 设置全局上下文引用
+	globalCtx = ctx
 
 	// 设置布局函数
 	g.SetManagerFunc(func(g *gocui.Gui) error {
@@ -126,22 +129,20 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 	middleHeight := maxY - cmdHeight
 
 	// 文件浏览器 (左侧)
-	if v, err := g.SetView("files", 0, 0, leftWidth-1, middleHeight-1); err != nil {
+	if v, err := g.SetView("filebrowser", 0, 0, leftWidth-1, middleHeight-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "文件浏览器"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
 	}
-
+	
 	// 代码窗口 (中间)
 	if v, err := g.SetView("code", leftWidth, 0, leftWidth+middleWidth-1, middleHeight-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "代码视图"
 		v.Wrap = false
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorYellow
@@ -158,8 +159,10 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "寄存器"
 		v.Wrap = false
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorCyan
+		v.SelFgColor = gocui.ColorBlack
 	}
 
 	// 变量窗口 (右中)
@@ -167,8 +170,10 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "变量"
 		v.Wrap = false
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorMagenta
+		v.SelFgColor = gocui.ColorBlack
 	}
 
 	// 堆栈窗口 (右下)
@@ -176,8 +181,10 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "堆栈"
 		v.Wrap = false
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorRed
+		v.SelFgColor = gocui.ColorBlack
 	}
 
 	// 命令窗口 (底部) - 关键修复：设置为可编辑
@@ -185,10 +192,12 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "命令"
 		v.Editable = true  // 🔧 修复：设置为可编辑
 		v.Wrap = true
 		v.Autoscroll = true
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorBlue
+		v.SelFgColor = gocui.ColorWhite
 		
 		// 🔧 修复：设置命令窗口为默认焦点
 		g.SetCurrentView("command")
@@ -202,6 +211,62 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		v.Frame = false
 		v.BgColor = gocui.ColorBlue
 		v.FgColor = gocui.ColorWhite
+	}
+
+	// 设置动态窗口标题（根据焦点状态）
+	currentView := g.CurrentView()
+	currentName := ""
+	if currentView != nil {
+		currentName = currentView.Name()
+	}
+	
+	// 为每个窗口设置标题（根据是否为当前焦点）
+	windowTitles := map[string]string{
+		"filebrowser": "File Browser",
+		"code":        "Code View", 
+		"registers":   "Registers",
+		"variables":   "Variables",
+		"stack":       "Call Stack",
+		"command":     "Command Terminal",
+	}
+	
+	for viewName, baseTitle := range windowTitles {
+		if v, err := g.View(viewName); err == nil {
+			if currentName == viewName {
+				// 使用更明显的标题高亮效果（背景色+前景色）
+				v.Title = "\x1b[1;43;30m▶ " + baseTitle + " (Focused) \x1b[0m"
+				// 设置边框为明亮的黄色
+				v.FgColor = gocui.ColorYellow | gocui.AttrBold
+				// 保持选择区域的高亮
+				v.SelBgColor = gocui.ColorYellow
+				v.SelFgColor = gocui.ColorBlack
+			} else {
+				v.Title = baseTitle
+				// 恢复默认边框颜色
+				v.FgColor = gocui.ColorWhite
+				// 保持原有的选择颜色配置
+				switch viewName {
+				case "filebrowser":
+					v.SelBgColor = gocui.ColorGreen
+					v.SelFgColor = gocui.ColorBlack
+				case "code":
+					v.SelBgColor = gocui.ColorYellow
+					v.SelFgColor = gocui.ColorBlack
+				case "registers":
+					v.SelBgColor = gocui.ColorCyan
+					v.SelFgColor = gocui.ColorBlack
+				case "variables":
+					v.SelBgColor = gocui.ColorMagenta
+					v.SelFgColor = gocui.ColorBlack
+				case "stack":
+					v.SelBgColor = gocui.ColorRed
+					v.SelFgColor = gocui.ColorBlack
+				case "command":
+					v.SelBgColor = gocui.ColorBlue
+					v.SelFgColor = gocui.ColorWhite
+				}
+			}
+		}
 	}
 
 	// 更新所有视图
@@ -271,12 +336,12 @@ func bindKeys(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 
 	// 文件浏览器
-	if err := g.SetKeybinding("files", gocui.KeyEnter, gocui.ModNone, handleFileSelection(ctx)); err != nil {
+	if err := g.SetKeybinding("filebrowser", gocui.KeyEnter, gocui.ModNone, handleFileSelection(ctx)); err != nil {
 		log.Panicln(err)
 	}
 	
 	// 文件夹展开/收缩
-	if err := g.SetKeybinding("files", gocui.KeySpace, gocui.ModNone, handleFileToggle(ctx)); err != nil {
+	if err := g.SetKeybinding("filebrowser", gocui.KeySpace, gocui.ModNone, handleFileToggle(ctx)); err != nil {
 		log.Panicln(err)
 	}
 
@@ -294,13 +359,24 @@ func bindKeys(g *gocui.Gui, ctx *DebuggerContext) {
 		log.Panicln(err)
 	}
 
-	// 滚动事件
+	// 滚动事件 - 全局绑定
 	if err := g.SetKeybinding("", gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
 		log.Panicln(err)
 	}
 
 	if err := g.SetKeybinding("", gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
 		log.Panicln(err)
+	}
+
+	// 为每个视图绑定特定的鼠标滚动事件
+	views := []string{"filebrowser", "code", "registers", "variables", "stack", "command"}
+	for _, viewName := range views {
+		if err := g.SetKeybinding(viewName, gocui.MouseWheelUp, gocui.ModNone, mouseScrollUpHandler); err != nil {
+			log.Panicln(err)
+		}
+		if err := g.SetKeybinding(viewName, gocui.MouseWheelDown, gocui.ModNone, mouseScrollDownHandler); err != nil {
+			log.Panicln(err)
+		}
 	}
 
 	// 字符输入（命令）
@@ -349,7 +425,7 @@ func showHelpHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) err
 		helpLines := uiManager.ShowHelp()
 		helpContent := strings.Join(helpLines, "\n")
 		
-		popup := createPopupWindow(ctx, "help", "帮助", 80, 30, strings.Split(helpContent, "\n"))
+		popup := createPopupWindow(ctx, "help", "Help", 80, 30, strings.Split(helpContent, "\n"))
 		showPopupWindow(ctx, popup)
 		
 		return nil
@@ -357,7 +433,7 @@ func showHelpHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) err
 }
 
 func nextViewHandler(g *gocui.Gui, v *gocui.View) error {
-	views := []string{"files", "code", "registers", "variables", "stack", "command"}
+	views := []string{"filebrowser", "code", "registers", "variables", "stack", "command"}
 	current := ""
 	if v != nil {
 		current = v.Name()
@@ -380,9 +456,9 @@ func prevFrameHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) er
 		sessionManager := NewSessionManager(ctx)
 		err := sessionManager.PrevFrame()
 		if err != nil {
-			ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("上一帧失败: %v", err))
-		} else {
-			ctx.CommandHistory = append(ctx.CommandHistory, "已跳转到上一帧")
+					ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Previous frame failed: %v", err))
+	} else {
+		ctx.CommandHistory = append(ctx.CommandHistory, "Jumped to previous frame")
 		}
 		ctx.CommandDirty = true
 		return nil
@@ -394,9 +470,9 @@ func nextFrameHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) er
 		sessionManager := NewSessionManager(ctx)
 		err := sessionManager.NextFrame()
 		if err != nil {
-			ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("下一帧失败: %v", err))
-		} else {
-			ctx.CommandHistory = append(ctx.CommandHistory, "已跳转到下一帧")
+					ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Next frame failed: %v", err))
+	} else {
+		ctx.CommandHistory = append(ctx.CommandHistory, "Jumped to next frame")
 		}
 		ctx.CommandDirty = true
 		return nil
@@ -447,15 +523,15 @@ func handleFileSelection(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View)
 			// 切换目录展开状态
 			err := fileManager.ToggleFileExpansion(filePath)
 			if err != nil {
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("切换目录失败: %v", err))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Toggle directory failed: %v", err))
 			}
 		} else {
 			// 尝试打开文件
 			err := fileManager.OpenFile(filePath)
 			if err != nil {
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("打开文件失败: %v", err))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Open file failed: %v", err))
 			} else {
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("已打开文件: %s", filePath))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Opened file: %s", filePath))
 			}
 		}
 		
@@ -555,13 +631,13 @@ func handleBreakpointToggle(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.Vi
 		if fileManager.HasBreakpoint(ctx.Project.CurrentFile, actualLine) {
 			err := fileManager.RemoveBreakpoint(ctx.Project.CurrentFile, actualLine)
 			if err == nil {
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("已移除第 %d 行的断点", actualLine))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Removed breakpoint at line %d", actualLine))
 			}
 		} else {
 			functionName := fmt.Sprintf("line_%d", actualLine)
 			err := fileManager.AddBreakpoint(ctx.Project.CurrentFile, actualLine, functionName)
 			if err == nil {
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("已在第 %d 行添加断点", actualLine))
+				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("Added breakpoint at line %d", actualLine))
 			}
 		}
 		
@@ -590,9 +666,14 @@ func handleBackspace(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) err
 
 func mouseDownHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
-		// 基本鼠标处理
+		// 鼠标点击窗口聚焦
 		if v != nil {
+			// 设置当前视图（聚焦）
 			g.SetCurrentView(v.Name())
+			
+			// 创建事件处理器并处理鼠标点击
+			eventHandler := NewEventHandler(ctx, g)
+			return eventHandler.MouseDownHandler()
 		}
 		return nil
 	}
@@ -607,6 +688,17 @@ func mouseUpHandler(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) erro
 
 func mouseScrollUpHandler(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
+		// 设置当前视图以确保焦点正确
+		g.SetCurrentView(v.Name())
+		
+		// 使用智能滚动
+		ctx := globalCtx
+		if ctx != nil {
+			eh := NewEventHandler(ctx, g)
+			return eh.ScrollUpHandler()
+		}
+		
+		// 备用方案
 		ox, oy := v.Origin()
 		if oy > 0 {
 			v.SetOrigin(ox, oy-1)
@@ -617,6 +709,17 @@ func mouseScrollUpHandler(g *gocui.Gui, v *gocui.View) error {
 
 func mouseScrollDownHandler(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
+		// 设置当前视图以确保焦点正确
+		g.SetCurrentView(v.Name())
+		
+		// 使用智能滚动
+		ctx := globalCtx
+		if ctx != nil {
+			eh := NewEventHandler(ctx, g)
+			return eh.ScrollDownHandler()
+		}
+		
+		// 备用方案
 		ox, oy := v.Origin()
 		v.SetOrigin(ox, oy+1)
 	}
@@ -626,35 +729,29 @@ func mouseScrollDownHandler(g *gocui.Gui, v *gocui.View) error {
 // ========== 视图更新 ==========
 
 func updateAllViews(g *gocui.Gui, ctx *DebuggerContext) {
-	uiManager := NewUIManager(ctx, g)
+	// 使用新的ViewUpdater而不是UIManager
+	viewUpdater := NewViewUpdater(ctx, g)
 	
-	if v, err := g.View("files"); err == nil {
-		uiManager.UpdateFileListView(v)
-	}
+	// 更新文件浏览器
+	viewUpdater.UpdateFileBrowserView(g, ctx)
 	
-	if v, err := g.View("code"); err == nil {
-		uiManager.UpdateCodeView(v)
-	}
+	// 更新代码视图
+	viewUpdater.UpdateCodeView(g, ctx)
 	
-	if v, err := g.View("registers"); err == nil {
-		uiManager.UpdateRegistersView(v)
-	}
+	// 更新寄存器视图
+	viewUpdater.UpdateRegistersView(g, ctx)
 	
-	if v, err := g.View("variables"); err == nil {
-		uiManager.UpdateVariablesView(v)
-	}
+	// 更新变量视图
+	viewUpdater.UpdateVariablesView(g, ctx)
 	
-	if v, err := g.View("stack"); err == nil {
-		uiManager.UpdateStackView(v)
-	}
+	// 更新堆栈视图
+	viewUpdater.UpdateStackView(g, ctx)
 	
-	if v, err := g.View("command"); err == nil {
-		uiManager.UpdateCommandView(v)
-	}
+	// 更新命令视图
+	viewUpdater.UpdateCommandView(g, ctx)
 	
-	if v, err := g.View("status"); err == nil {
-		uiManager.UpdateStatusView(v)
-	}
+	// 更新状态栏
+	viewUpdater.UpdateStatusView(g, ctx)
 }
 
 // ========== 辅助函数 ==========
