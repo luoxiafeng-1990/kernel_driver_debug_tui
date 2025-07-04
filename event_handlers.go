@@ -145,25 +145,65 @@ func (eh *EventHandler) scrollWindowByName(name string, direction int) {
 		if fileScroll < 0 {
 			fileScroll = 0
 		}
+		// 强制更新文件浏览器视图
+		eh.gui.Update(func(g *gocui.Gui) error {
+			viewUpdater := NewViewUpdater(eh.ctx, g)
+			viewUpdater.UpdateFileBrowserView(g, eh.ctx)
+			return nil
+		})
 	case "registers":
 		regScroll += direction
 		if regScroll < 0 {
 			regScroll = 0
 		}
+		// 强制更新寄存器视图
+		eh.gui.Update(func(g *gocui.Gui) error {
+			viewUpdater := NewViewUpdater(eh.ctx, g)
+			viewUpdater.UpdateRegistersView(g, eh.ctx)
+			return nil
+		})
 	case "variables":
 		varScroll += direction
 		if varScroll < 0 {
 			varScroll = 0
 		}
+		// 强制更新变量视图
+		eh.gui.Update(func(g *gocui.Gui) error {
+			viewUpdater := NewViewUpdater(eh.ctx, g)
+			viewUpdater.UpdateVariablesView(g, eh.ctx)
+			return nil
+		})
 	case "stack":
 		stackScroll += direction
 		if stackScroll < 0 {
 			stackScroll = 0
 		}
+		// 强制更新堆栈视图
+		eh.gui.Update(func(g *gocui.Gui) error {
+			viewUpdater := NewViewUpdater(eh.ctx, g)
+			viewUpdater.UpdateStackView(g, eh.ctx)
+			return nil
+		})
 	case "code":
 		codeScroll += direction
 		if codeScroll < 0 {
 			codeScroll = 0
+		}
+		// 强制更新代码视图
+		eh.gui.Update(func(g *gocui.Gui) error {
+			viewUpdater := NewViewUpdater(eh.ctx, g)
+			viewUpdater.UpdateCodeView(g, eh.ctx)
+			return nil
+		})
+	case "command":
+		// 命令窗口使用内置的滚动方式
+		if v := eh.gui.CurrentView(); v != nil && v.Name() == "command" {
+			ox, oy := v.Origin()
+			if direction > 0 {
+				v.SetOrigin(ox, oy+1)
+			} else if oy > 0 {
+				v.SetOrigin(ox, oy-1)
+			}
 		}
 	}
 }

@@ -120,13 +120,41 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		return layoutFullscreen(g, ctx.FullscreenView, maxX, maxY)
 	}
 
-	// 计算窗口位置
+	// 计算窗口位置 - 添加边界检查防止崩溃
 	leftWidth := ctx.Layout.LeftPanelWidth
 	rightWidth := ctx.Layout.RightPanelWidth
 	cmdHeight := ctx.Layout.CommandHeight
 	
+	// 🔧 关键修复：确保所有计算值都是正数
 	middleWidth := maxX - leftWidth - rightWidth
+	if middleWidth < 10 {
+		// 如果中间宽度太小，动态调整左右面板
+		adjustment := (10 - middleWidth) / 2
+		leftWidth -= adjustment
+		rightWidth -= adjustment
+		if leftWidth < 15 {
+			leftWidth = 15
+		}
+		if rightWidth < 15 {
+			rightWidth = 15
+		}
+		middleWidth = maxX - leftWidth - rightWidth
+		if middleWidth < 10 {
+			middleWidth = 10
+		}
+	}
+	
 	middleHeight := maxY - cmdHeight
+	if middleHeight < 5 {
+		// 如果上半部分高度太小，强制调整命令窗口高度
+		cmdHeight = maxY - 5
+		if cmdHeight < 3 {
+			cmdHeight = 3
+		}
+		middleHeight = maxY - cmdHeight
+		// 同步更新Layout中的值
+		ctx.Layout.CommandHeight = cmdHeight
+	}
 
 	// 文件浏览器 (左侧)
 	if v, err := g.SetView("filebrowser", 0, 0, leftWidth-1, middleHeight-1); err != nil {
@@ -149,10 +177,27 @@ func layout(g *gocui.Gui, ctx *DebuggerContext) error {
 		v.SelFgColor = gocui.ColorBlack
 	}
 
-	// 右侧面板分割
+	// 右侧面板分割 - 添加边界检查
 	rightSplit1 := ctx.Layout.RightPanelSplit1
 	rightSplit2 := ctx.Layout.RightPanelSplit2
 	rightStart := leftWidth + middleWidth
+	
+	// 🔧 关键修复：确保右侧面板分割点有效
+	if rightSplit1 >= middleHeight {
+		rightSplit1 = middleHeight / 3
+	}
+	if rightSplit2 >= middleHeight {
+		rightSplit2 = 2 * middleHeight / 3
+	}
+	if rightSplit1 < 2 {
+		rightSplit1 = 2
+	}
+	if rightSplit2 <= rightSplit1 + 1 {
+		rightSplit2 = rightSplit1 + 2
+	}
+	if rightSplit2 >= middleHeight - 1 {
+		rightSplit2 = middleHeight - 2
+	}
 
 	// 寄存器窗口 (右上)
 	if v, err := g.SetView("registers", rightStart, 0, maxX-1, rightSplit1-1); err != nil {
@@ -296,11 +341,11 @@ func bindKeys(g *gocui.Gui, ctx *DebuggerContext) {
 	}
 
 	// 🔧 新增：动态窗口大小调整键盘绑定
-	// Ctrl+J/K - 调整命令窗口高度
-	if err := g.SetKeybinding("", gocui.KeyCtrlJ, gocui.ModNone, adjustCommandHeightDown(ctx)); err != nil {
+	// Ctrl+J/K - 调整命令窗口高度 (修复方向：J=向上增加高度, K=向下减少高度)
+	if err := g.SetKeybinding("", gocui.KeyCtrlJ, gocui.ModNone, adjustCommandHeightUp(ctx)); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("", gocui.KeyCtrlK, gocui.ModNone, adjustCommandHeightUp(ctx)); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyCtrlK, gocui.ModNone, adjustCommandHeightDown(ctx)); err != nil {
 		log.Panicln(err)
 	}
 	
@@ -757,12 +802,61 @@ func updateAllViews(g *gocui.Gui, ctx *DebuggerContext) {
 // ========== 辅助函数 ==========
 
 func initDynamicLayout(maxX, maxY int) *DynamicLayout {
+	// 边界检查，确保不会出现负数或零值
+	if maxX <= 0 {
+		maxX = 80 // 默认宽度
+	}
+	if maxY <= 0 {
+		maxY = 24 // 默认高度
+	}
+	
+	leftWidth := maxX / 4
+	if leftWidth < 15 {
+		leftWidth = 15
+	}
+	
+	rightWidth := maxX / 3
+	if rightWidth < 20 {
+		rightWidth = 20
+	}
+	
+	cmdHeight := 8
+	if cmdHeight > maxY/2 {
+		cmdHeight = maxY / 2
+	}
+	if cmdHeight < 5 {
+		cmdHeight = 5
+	}
+	
+	availableHeight := maxY - cmdHeight
+	if availableHeight < 10 {
+		availableHeight = 10
+	}
+	
+	// 计算右侧面板分割点，确保有效
+	split1 := availableHeight / 3
+	split2 := 2 * availableHeight / 3
+	
+	// 边界检查分割点
+	if split1 < 2 {
+		split1 = 2
+	}
+	if split2 <= split1 + 1 {
+		split2 = split1 + 2
+	}
+	if split2 >= availableHeight - 1 {
+		split2 = availableHeight - 2
+		if split2 <= split1 + 1 {
+			split1 = split2 - 2
+		}
+	}
+	
 	return &DynamicLayout{
-		LeftPanelWidth:   maxX / 4,
-		RightPanelWidth:  maxX / 3,
-		CommandHeight:    8,
-		RightPanelSplit1: (maxY - 8) / 3,
-		RightPanelSplit2: 2 * (maxY - 8) / 3,
+		LeftPanelWidth:   leftWidth,
+		RightPanelWidth:  rightWidth,
+		CommandHeight:    cmdHeight,
+		RightPanelSplit1: split1,
+		RightPanelSplit2: split2,
 	}
 }
 
@@ -919,63 +1013,129 @@ func findFilePathInTree(node *FileNode, fileName string) string {
 
 // ========== 动态窗口大小调整功能 ==========
 
-// 调整命令窗口高度 - 增加
+// 调整命令窗口高度 - 增加 (防崩溃加强版)
 func adjustCommandHeightUp(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
-		if ctx.Layout != nil {
-			// 增加命令窗口高度，最大不超过终端高度的一半
-			_, maxY := g.Size()
-			if ctx.Layout.CommandHeight < maxY/2 {
-				ctx.Layout.CommandHeight += 2
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("命令窗口高度: %d", ctx.Layout.CommandHeight))
-				ctx.CommandDirty = true
+		if ctx == nil || ctx.Layout == nil {
+			return nil
+		}
+		
+		// 获取终端尺寸并检查有效性
+		_, maxY := g.Size()
+		if maxY <= 0 {
+			return nil
+		}
+		
+		// 安全的边界检查：增加命令窗口高度，最大不超过终端高度的60%
+		maxHeight := maxY * 6 / 10  // 60% of terminal height
+		if maxHeight < 5 {
+			maxHeight = 5
+		}
+		// 更严格的限制：确保至少留给上半部分5行空间
+		if maxHeight > maxY - 5 {
+			maxHeight = maxY - 5
+		}
+		
+		if ctx.Layout.CommandHeight < maxHeight && ctx.Layout.CommandHeight + 2 <= maxHeight {
+			ctx.Layout.CommandHeight += 2
+			
+			// 🔧 额外安全检查：重新计算右侧面板分割点
+			newAvailableHeight := maxY - ctx.Layout.CommandHeight
+			if newAvailableHeight > 5 {
+				ctx.Layout.RightPanelSplit1 = newAvailableHeight / 3
+				ctx.Layout.RightPanelSplit2 = 2 * newAvailableHeight / 3
+				
+				// 确保分割点有效
+				if ctx.Layout.RightPanelSplit1 < 2 {
+					ctx.Layout.RightPanelSplit1 = 2
+				}
+				if ctx.Layout.RightPanelSplit2 <= ctx.Layout.RightPanelSplit1 + 1 {
+					ctx.Layout.RightPanelSplit2 = ctx.Layout.RightPanelSplit1 + 2
+				}
 			}
+			
+			ctx.CommandDirty = true
 		}
 		return nil
 	}
 }
 
-// 调整命令窗口高度 - 减少
+// 调整命令窗口高度 - 减少 (防崩溃加强版)
 func adjustCommandHeightDown(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
-		if ctx.Layout != nil {
-			// 减少命令窗口高度，最小为5行
-			if ctx.Layout.CommandHeight > 5 {
-				ctx.Layout.CommandHeight -= 2
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("命令窗口高度: %d", ctx.Layout.CommandHeight))
-				ctx.CommandDirty = true
+		if ctx == nil || ctx.Layout == nil {
+			return nil
+		}
+		
+		// 获取终端尺寸并检查有效性
+		_, maxY := g.Size()
+		if maxY <= 0 {
+			return nil
+		}
+		
+		// 安全的边界检查：减少命令窗口高度，最小为5行
+		minHeight := 5
+		if ctx.Layout.CommandHeight > minHeight {
+			ctx.Layout.CommandHeight -= 2
+			// 确保不会降到最小值以下
+			if ctx.Layout.CommandHeight < minHeight {
+				ctx.Layout.CommandHeight = minHeight
 			}
+			ctx.CommandDirty = true
 		}
 		return nil
 	}
 }
 
-// 调整左侧面板宽度 - 减少（代码区域变大）
+// 调整左侧面板宽度 - 减少（代码区域变大）(防崩溃加强版)
 func adjustLeftPanelWidthDown(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
-		if ctx.Layout != nil {
-			// 减少左侧面板宽度，最小为15列
-			if ctx.Layout.LeftPanelWidth > 15 {
-				ctx.Layout.LeftPanelWidth -= 5
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("左侧面板宽度: %d", ctx.Layout.LeftPanelWidth))
-				ctx.CommandDirty = true
+		if ctx == nil || ctx.Layout == nil {
+			return nil
+		}
+		
+		// 获取终端尺寸并检查有效性
+		maxX, _ := g.Size()
+		if maxX <= 0 {
+			return nil
+		}
+		
+		// 安全的边界检查：减少左侧面板宽度，最小为15列
+		minWidth := 15
+		if ctx.Layout.LeftPanelWidth > minWidth {
+			ctx.Layout.LeftPanelWidth -= 5
+			// 确保不会降到最小值以下
+			if ctx.Layout.LeftPanelWidth < minWidth {
+				ctx.Layout.LeftPanelWidth = minWidth
 			}
+			ctx.CommandDirty = true
 		}
 		return nil
 	}
 }
 
-// 调整左侧面板宽度 - 增加（代码区域变小）
+// 调整左侧面板宽度 - 增加（代码区域变小）(防崩溃加强版)
 func adjustLeftPanelWidthUp(ctx *DebuggerContext) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
-		if ctx.Layout != nil {
-			// 增加左侧面板宽度，最大不超过终端宽度的一半
-			maxX, _ := g.Size()
-			if ctx.Layout.LeftPanelWidth < maxX/2 {
-				ctx.Layout.LeftPanelWidth += 5
-				ctx.CommandHistory = append(ctx.CommandHistory, fmt.Sprintf("左侧面板宽度: %d", ctx.Layout.LeftPanelWidth))
-				ctx.CommandDirty = true
-			}
+		if ctx == nil || ctx.Layout == nil {
+			return nil
+		}
+		
+		// 获取终端尺寸并检查有效性
+		maxX, _ := g.Size()
+		if maxX <= 0 {
+			return nil
+		}
+		
+		// 安全的边界检查：增加左侧面板宽度，最大不超过终端宽度的一半
+		maxWidth := maxX / 2
+		if maxWidth < 20 {
+			maxWidth = 20
+		}
+		
+		if ctx.Layout.LeftPanelWidth < maxWidth {
+			ctx.Layout.LeftPanelWidth += 5
+			ctx.CommandDirty = true
 		}
 		return nil
 	}
