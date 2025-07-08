@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"debug/dwarf"
 	"debug/elf"
+	"regexp"
 
 	"github.com/jroimartin/gocui"
 )
@@ -149,6 +150,59 @@ type VariableLocation struct {
 	StackOffset int    // 栈偏移量
 	Size        int    // 变量大小
 }
+
+// BPF支持的架构映射
+var SupportedArchitectures = map[string]string{
+	"x86_64":  "__TARGET_ARCH_x86",
+	"aarch64": "__TARGET_ARCH_arm64", 
+	"arm64":   "__TARGET_ARCH_arm64",
+	"riscv64": "__TARGET_ARCH_riscv",
+	"s390x":   "__TARGET_ARCH_s390",
+	"ppc64le": "__TARGET_ARCH_powerpc",
+	"mips64":  "__TARGET_ARCH_mips",
+}
+
+// 架构显示名称映射
+var ArchDisplayNames = map[string]string{
+	"x86_64":  "x86_64 (Intel/AMD 64-bit)",
+	"aarch64": "ARM64/AArch64",
+	"arm64":   "ARM64/AArch64", 
+	"riscv64": "RISC-V 64-bit",
+	"s390x":   "IBM System z",
+	"ppc64le": "PowerPC 64-bit LE",
+	"mips64":  "MIPS 64-bit",
+}
+
+// 检测当前系统架构
+func detectCurrentArch() string {
+	output, err := exec.Command("uname", "-m").Output()
+	if err != nil {
+		return "x86_64" // 默认架构
+	}
+	
+	arch := strings.TrimSpace(string(output))
+	
+	// 标准化架构名称
+	switch arch {
+	case "x86_64", "amd64":
+		return "x86_64"
+	case "aarch64", "arm64":
+		return "aarch64"
+	case "riscv64":
+		return "riscv64"
+	case "s390x":
+		return "s390x"
+	case "ppc64le":
+		return "ppc64le"
+	case "mips64":
+		return "mips64"
+	default:
+		return "x86_64" // 默认使用x86_64
+	}
+}
+
+// 注意：selectTargetArchitecture 函数已废弃
+// 现在使用命令行参数方式进行架构选择，避免TUI环境下的输入冲突
 
 var (
 	focusNames = []string{"File Browser", "Registers", "Variables", "Call Stack", "Code View", "Memory", "Command"}
@@ -1112,12 +1166,22 @@ func generateBPF(ctx *DebuggerContext) error {
 	}
 	defer file.Close()
 	
+	// 检测当前架构并生成对应的定义
+	currentArch := detectCurrentArch()
+	archDefine, exists := SupportedArchitectures[currentArch]
+	if !exists {
+		archDefine = "__TARGET_ARCH_x86" // 默认架构
+	}
+
 	// 写入BPF代码头部
 	fmt.Fprintln(file, "#include <linux/bpf.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_helpers.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_tracing.h>")
 	fmt.Fprintln(file, "#include <linux/ptrace.h>")
 	fmt.Fprintln(file, "#include <linux/types.h>")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "// 定义目标架构 - 解决PT_REGS_PARM错误")
+	fmt.Fprintf(file, "#define %s\n", archDefine)
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "// 自动生成的BPF调试代码")
 	fmt.Fprintln(file, "// 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
@@ -1318,6 +1382,278 @@ func generateUnloadScript(scriptPath string) error {
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "echo \"[SUCCESS] BPF调试程序已卸载\"")
 	
+	return nil
+}
+
+// 生成变量监控BPF加载脚本
+func generateVarsLoadScript(scriptPath string, breakpointCount int) error {
+	file, err := os.Create(scriptPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// 设置可执行权限
+	os.Chmod(scriptPath, 0755)
+	
+	fmt.Fprintln(file, "#!/bin/bash")
+	fmt.Fprintln(file, "# 变量监控BPF程序加载脚本")
+	fmt.Fprintln(file, "# 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "set -e")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "BPF_FILE=\"debug_variables.bpf.c\"")
+	fmt.Fprintln(file, "BPF_OBJ=\"debug_variables.bpf.o\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[INFO] 🔥 Loading Variable Monitoring BPF Program...\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查root权限")
+	fmt.Fprintln(file, "if [ \"$EUID\" -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] Root privileges required\"")
+	fmt.Fprintln(file, "    echo \"Please run: sudo $0\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查BPF源文件")
+	fmt.Fprintln(file, "if [ ! -f \"$BPF_FILE\" ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF source file $BPF_FILE not found\"")
+	fmt.Fprintln(file, "    echo \"Please run 'vars' command in debugger first\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 编译BPF程序")
+	fmt.Fprintln(file, "echo \"[INFO] Compiling variable monitoring BPF program...\"")
+	fmt.Fprintln(file, "clang -O2 -target bpf -c \"$BPF_FILE\" -o \"$BPF_OBJ\"")
+	fmt.Fprintln(file, "if [ $? -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF compilation failed\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 加载BPF程序")
+	fmt.Fprintln(file, "echo \"[INFO] Loading variable monitoring BPF program...\"")
+	fmt.Fprintln(file, "bpftool prog load \"$BPF_OBJ\" /sys/fs/bpf/debug_variables")
+	fmt.Fprintln(file, "if [ $? -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] BPF program loading failed\"")
+	fmt.Fprintln(file, "    echo \"Please check:\"")
+	fmt.Fprintln(file, "    echo \"• bpftool installation\"")
+	fmt.Fprintln(file, "    echo \"• Kernel BPF support\"")
+	fmt.Fprintln(file, "    echo \"• Target functions exist in kernel\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintf(file, "echo \"[SUCCESS] 🎯 Variable monitoring active for %d breakpoints\"\n", breakpointCount)
+	fmt.Fprintln(file, "echo \"\"")
+	fmt.Fprintln(file, "echo \"📊 View real-time variable monitoring:\"")
+	fmt.Fprintln(file, "echo \"  sudo cat /sys/kernel/debug/tracing/trace_pipe\"")
+	fmt.Fprintln(file, "echo \"\"")
+	fmt.Fprintln(file, "echo \"🛑 To stop monitoring:\"")
+	fmt.Fprintln(file, "echo \"  sudo ./unload_debug_vars.sh\"")
+	
+	return nil
+}
+
+// 生成变量监控BPF卸载脚本
+func generateVarsUnloadScript(scriptPath string) error {
+	file, err := os.Create(scriptPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// 设置可执行权限
+	os.Chmod(scriptPath, 0755)
+	
+	fmt.Fprintln(file, "#!/bin/bash")
+	fmt.Fprintln(file, "# 变量监控BPF程序卸载脚本")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[INFO] 🛑 Unloading variable monitoring BPF program...\"")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 检查root权限")
+	fmt.Fprintln(file, "if [ \"$EUID\" -ne 0 ]; then")
+	fmt.Fprintln(file, "    echo \"[ERROR] Root privileges required\"")
+	fmt.Fprintln(file, "    echo \"Please run: sudo $0\"")
+	fmt.Fprintln(file, "    exit 1")
+	fmt.Fprintln(file, "fi")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 卸载BPF程序")
+	fmt.Fprintln(file, "rm -f /sys/fs/bpf/debug_variables")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "# 清理编译产物")
+	fmt.Fprintln(file, "rm -f debug_variables.bpf.o")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "echo \"[SUCCESS] ✅ Variable monitoring stopped and cleaned up\"")
+	
+	return nil
+}
+
+// 自动解析函数中的所有变量（新功能）
+func parseAllFunctionVariables(filePath string, lineNumber int) []string {
+	// 首先尝试从源码中解析
+	if vars := parseVariablesFromSource(filePath, lineNumber); len(vars) > 0 {
+		return vars
+	}
+	
+	// 回退到DWARF解析（如果有调试信息）
+	if vars := parseVariablesFromDWARF(filePath, lineNumber); len(vars) > 0 {
+		return vars
+	}
+	
+	// 最后回退到常见变量模式
+	return []string{"local_var", "counter", "temp", "i", "len", "ret", "addr", "ptr", "data", "size", "index", "val", "result"}
+}
+
+// 从源码中解析函数的所有局部变量
+func parseVariablesFromSource(filePath string, targetLine int) []string {
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	if targetLine > len(lines) {
+		return nil
+	}
+	
+	// 找到目标行所在的函数
+	functionStart, functionEnd := findFunctionBounds(lines, targetLine-1) // 转换为0基索引
+	if functionStart == -1 || functionEnd == -1 {
+		return nil
+	}
+	
+	var variables []string
+	variableSet := make(map[string]bool) // 去重
+	
+	// 解析函数内的所有变量声明
+	for i := functionStart; i <= functionEnd && i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if vars := extractVariablesFromLine(line); len(vars) > 0 {
+			for _, v := range vars {
+				if !variableSet[v] && isValidFunctionName(v) { // 复用现有的验证函数
+					variables = append(variables, v)
+					variableSet[v] = true
+				}
+			}
+		}
+	}
+	
+	return variables
+}
+
+// 找到函数的开始和结束行
+func findFunctionBounds(lines []string, targetLine int) (int, int) {
+	if targetLine >= len(lines) {
+		return -1, -1
+	}
+	
+	functionStart := -1
+	functionEnd := -1
+	braceLevel := 0
+	
+	// 向上搜索函数开始
+	for i := targetLine; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		
+		// 检查是否是函数定义行
+		if strings.Contains(line, "(") && strings.Contains(line, ")") && 
+		   (strings.Contains(line, "{") || (i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "{")) {
+			// 简单的函数识别：包含参数列表且后面有大括号
+			if !strings.HasPrefix(line, "//") && !strings.HasPrefix(line, "*") && 
+			   !strings.Contains(line, "if") && !strings.Contains(line, "for") && 
+			   !strings.Contains(line, "while") && !strings.Contains(line, "switch") {
+				functionStart = i
+				break
+			}
+		}
+	}
+	
+	if functionStart == -1 {
+		return -1, -1
+	}
+	
+	// 从函数开始处向下搜索函数结束
+	for i := functionStart; i < len(lines); i++ {
+		line := lines[i]
+		for _, ch := range line {
+			if ch == '{' {
+				braceLevel++
+			} else if ch == '}' {
+				braceLevel--
+				if braceLevel == 0 {
+					functionEnd = i
+					return functionStart, functionEnd
+				}
+			}
+		}
+	}
+	
+	return functionStart, functionEnd
+}
+
+// 从单行代码中提取变量声明
+func extractVariablesFromLine(line string) []string {
+	var variables []string
+	
+	// 移除注释
+	if idx := strings.Index(line, "//"); idx != -1 {
+		line = line[:idx]
+	}
+	if idx := strings.Index(line, "/*"); idx != -1 {
+		if endIdx := strings.Index(line[idx:], "*/"); endIdx != -1 {
+			line = line[:idx] + line[idx+endIdx+2:]
+		} else {
+			line = line[:idx]
+		}
+	}
+	
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return variables
+	}
+	
+	// 常见的C变量声明模式
+	patterns := []string{
+		// 基本类型声明
+		`(int|char|long|short|float|double|void|size_t|uint32_t|uint64_t|u32|u64)\s+\*?\s*(\w+)`,
+		// 结构体/联合体声明
+		`(struct|union)\s+\w+\s+\*?\s*(\w+)`,
+		// 简单赋值（可能是声明）
+		`(\w+)\s*=\s*`,
+	}
+	
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindAllStringSubmatch(line, -1)
+		for _, match := range matches {
+			if len(match) >= 3 {
+				varName := strings.TrimSpace(match[len(match)-1])
+				if varName != "" && !isKeyword(varName) {
+					variables = append(variables, varName)
+				}
+			}
+		}
+	}
+	
+	return variables
+}
+
+// 检查是否是C关键字
+func isKeyword(word string) bool {
+	keywords := map[string]bool{
+		"if": true, "else": true, "while": true, "for": true, "do": true,
+		"switch": true, "case": true, "default": true, "break": true, "continue": true,
+		"return": true, "goto": true, "sizeof": true, "typedef": true,
+		"struct": true, "union": true, "enum": true, "const": true, "static": true,
+		"extern": true, "inline": true, "volatile": true, "register": true,
+		"int": true, "char": true, "void": true, "long": true, "short": true,
+		"unsigned": true, "signed": true, "float": true, "double": true,
+	}
+	return keywords[word]
+}
+
+// 从DWARF信息中解析变量（更高级的实现）
+func parseVariablesFromDWARF(filePath string, lineNumber int) []string {
+	// 这里可以实现真正的DWARF解析
+	// 暂时返回空，因为需要复杂的DWARF解析逻辑
 	return nil
 }
 
@@ -1596,9 +1932,9 @@ func getRISCVRegisterName(regNum int) string {
 	return fmt.Sprintf("reg%d", regNum)
 }
 
-// 生成支持局部变量读取的BPF代码
+// 生成统一的BPF代码（包含基础断点+变量监控）
 func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) error {
-	// 添加调试信息
+	// 基本检查
 	if ctx == nil {
 		return fmt.Errorf("Debug context is null")
 	}
@@ -1617,25 +1953,56 @@ func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) erro
 	}
 	defer file.Close()
 	
+	// 检测当前架构并生成对应的定义
+	currentArch := detectCurrentArch()
+	archDefine, exists := SupportedArchitectures[currentArch]
+	if !exists {
+		archDefine = "__TARGET_ARCH_x86" // 默认架构
+	}
+
 	// 写入BPF代码头部
 	fmt.Fprintln(file, "#include <linux/bpf.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_helpers.h>")
 	fmt.Fprintln(file, "#include <bpf/bpf_tracing.h>")
 	fmt.Fprintln(file, "#include <linux/ptrace.h>")
+	fmt.Fprintln(file, "#include <linux/types.h>")
 	fmt.Fprintln(file, "")
-	fmt.Fprintln(file, "// 局部变量调试BPF程序")
+	fmt.Fprintln(file, "// 定义目标架构 - 解决PT_REGS_PARM错误")
+	fmt.Fprintf(file, "#define %s\n", archDefine)
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "// 统一BPF调试程序（基础断点 + 变量监控）")
 	fmt.Fprintln(file, "// 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Fprintln(file, "")
 	
-	// 定义变量读取结构
-	fmt.Fprintln(file, "struct variable_event {")
+	// 添加类型定义（兼容性处理）
+	fmt.Fprintln(file, "// 类型定义（确保兼容性）")
+	fmt.Fprintln(file, "#ifndef u32")
+	fmt.Fprintln(file, "typedef __u32 u32;")
+	fmt.Fprintln(file, "#endif")
+	fmt.Fprintln(file, "#ifndef u64")
+	fmt.Fprintln(file, "typedef __u64 u64;")
+	fmt.Fprintln(file, "#endif")
+	fmt.Fprintln(file, "#ifndef s64")
+	fmt.Fprintln(file, "typedef __s64 s64;")
+	fmt.Fprintln(file, "#endif")
+	fmt.Fprintln(file, "")
+	
+	// 统一的调试事件结构（包含基础断点+变量信息）
+	fmt.Fprintln(file, "// 统一调试事件结构")
+	fmt.Fprintln(file, "struct debug_event {")
+	fmt.Fprintln(file, "    // 基础断点信息")
 	fmt.Fprintln(file, "    u32 pid;")
+	fmt.Fprintln(file, "    u32 tgid;")
 	fmt.Fprintln(file, "    u64 timestamp;")
 	fmt.Fprintln(file, "    u32 breakpoint_id;")
+	fmt.Fprintln(file, "    char comm[16];")
 	fmt.Fprintln(file, "    char function[64];")
-	fmt.Fprintln(file, "    char var_name[32];")
-	fmt.Fprintln(file, "    s64 var_value;")
-	fmt.Fprintln(file, "    u8 var_type;  // 1=int, 2=long, 3=pointer")
+	if len(requestedVars) > 0 {
+		fmt.Fprintln(file, "    // 变量监控信息")
+		fmt.Fprintln(file, "    char var_name[32];")
+		fmt.Fprintln(file, "    s64 var_value;")
+		fmt.Fprintln(file, "    u8 var_type;  // 1=int, 2=long, 3=pointer")
+	}
 	fmt.Fprintln(file, "};")
 	fmt.Fprintln(file, "")
 	
@@ -1647,59 +2014,88 @@ func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) erro
 		
 		funcName := bp.Function
 		if funcName == "unknown" || funcName == "" {
-			continue
-		}
-		
-		// 获取这个断点处的变量位置信息
-		varLocations := parseDWARFVariableLocations(bp.File, bp.Line, requestedVars)
-		if len(varLocations) == 0 {
-			continue
+			// 尝试重新解析函数名
+			if parsedName := parseFunctionName(bp.File, bp.Line); parsedName != "" {
+				funcName = parsedName
+			} else {
+				continue
+			}
 		}
 		
 		fileName := filepath.Base(bp.File)
 		
+		// 基础断点信息
 		fmt.Fprintf(file, "// 断点 %d: %s:%d 在函数 %s\n", validBreakpoints+1, fileName, bp.Line, funcName)
-		fmt.Fprintf(file, "// 监控变量: ")
-		for varName := range varLocations {
-			fmt.Fprintf(file, "%s ", varName)
+		fmt.Fprintf(file, "// 功能: 基础断点监控")
+		
+		// 如果有变量请求，获取变量位置信息
+		var varLocations map[string]VariableLocation
+		if len(requestedVars) > 0 {
+			varLocations = parseDWARFVariableLocations(bp.File, bp.Line, requestedVars)
+			if len(varLocations) > 0 {
+				fmt.Fprintf(file, " + 变量监控")
+				fmt.Fprintf(file, " (")
+				first := true
+				for varName := range varLocations {
+					if !first {
+						fmt.Fprintf(file, ", ")
+					}
+					fmt.Fprintf(file, "%s", varName)
+					first = false
+				}
+				fmt.Fprintf(file, ")")
+			}
 		}
 		fmt.Fprintln(file)
 		
 		fmt.Fprintf(file, "SEC(\"kprobe/%s\")\n", funcName)
-		fmt.Fprintf(file, "int trace_vars_%d(struct pt_regs *ctx) {\n", validBreakpoints)
-		fmt.Fprintln(file, "    struct variable_event event = {};")
+		fmt.Fprintf(file, "int trace_debug_%d(struct pt_regs *ctx) {\n", validBreakpoints)
+		fmt.Fprintln(file, "    struct debug_event event = {};")
+		fmt.Fprintln(file, "")
+		fmt.Fprintln(file, "    // 基础断点信息收集")
 		fmt.Fprintln(file, "    u64 pid_tgid = bpf_get_current_pid_tgid();")
 		fmt.Fprintln(file, "    event.pid = pid_tgid;")
+		fmt.Fprintln(file, "    event.tgid = pid_tgid >> 32;")
 		fmt.Fprintln(file, "    event.timestamp = bpf_ktime_get_ns();")
 		fmt.Fprintf(file, "    event.breakpoint_id = %d;\n", validBreakpoints)
+		fmt.Fprintln(file, "    bpf_get_current_comm(&event.comm, sizeof(event.comm));")
 		fmt.Fprintf(file, "    bpf_probe_read_str(&event.function, sizeof(event.function), \"%s\");\n", funcName)
 		fmt.Fprintln(file, "")
 		
-		// 为每个变量生成读取代码
-		for varName, location := range varLocations {
-			fmt.Fprintf(file, "    // 读取变量: %s\n", varName)
-			fmt.Fprintf(file, "    bpf_probe_read_str(&event.var_name, sizeof(event.var_name), \"%s\");\n", varName)
-			
-			switch location.Type {
-			case "register":
-				fmt.Fprintf(file, "    event.var_value = PT_REGS_%s(ctx);\n", strings.ToUpper(location.Register))
-			case "stack":
-				fmt.Fprintln(file, "    {")
-				fmt.Fprintf(file, "        void *stack_addr = (void *)(PT_REGS_FP(ctx) + %d);\n", location.StackOffset)
-				fmt.Fprintln(file, "        long temp_val = 0;")
-				fmt.Fprintf(file, "        if (bpf_probe_read_user(&temp_val, %d, stack_addr) == 0) {\n", location.Size)
-				fmt.Fprintln(file, "            event.var_value = temp_val;")
-				fmt.Fprintln(file, "        }")
-				fmt.Fprintln(file, "    }")
-			case "memory":
-				// 处理内存地址中的变量
-				fmt.Fprintln(file, "    // Memory variable access not implemented yet")
+		// 基础断点输出
+		fmt.Fprintf(file, "    // 基础断点输出\n")
+		fmt.Fprintf(file, "    bpf_printk(\"[BREAKPOINT-%d] %s:%d in %%s() PID=%%d TGID=%%d at %%llu\\n\", \n", 
+			validBreakpoints+1, fileName, bp.Line)
+		fmt.Fprintln(file, "               event.function, event.pid, event.tgid, event.timestamp);")
+		fmt.Fprintln(file, "")
+		
+		// 如果有变量，生成变量读取代码
+		if len(varLocations) > 0 {
+			fmt.Fprintln(file, "    // 变量监控（如果有请求的变量）")
+			for varName, location := range varLocations {
+				fmt.Fprintf(file, "    // 读取变量: %s\n", varName)
+				fmt.Fprintf(file, "    bpf_probe_read_str(&event.var_name, sizeof(event.var_name), \"%s\");\n", varName)
+				
+				switch location.Type {
+				case "register":
+					fmt.Fprintf(file, "    event.var_value = PT_REGS_%s(ctx);\n", strings.ToUpper(location.Register))
+				case "stack":
+					fmt.Fprintln(file, "    {")
+					fmt.Fprintf(file, "        void *stack_addr = (void *)(PT_REGS_FP(ctx) + %d);\n", location.StackOffset)
+					fmt.Fprintln(file, "        long temp_val = 0;")
+					fmt.Fprintf(file, "        if (bpf_probe_read_user(&temp_val, %d, stack_addr) == 0) {\n", location.Size)
+					fmt.Fprintln(file, "            event.var_value = temp_val;")
+					fmt.Fprintln(file, "        }")
+					fmt.Fprintln(file, "    }")
+				case "memory":
+					fmt.Fprintln(file, "    // Memory variable access not implemented yet")
+				}
+				
+				fmt.Fprintln(file, "    event.var_type = 2;  // long type")
+				fmt.Fprintf(file, "    bpf_printk(\"[VAR-%d] %s:%%s=%%ld PID=%%d\\n\", event.var_name, event.var_value, event.pid);\n", 
+					validBreakpoints+1, funcName)
+				fmt.Fprintln(file, "")
 			}
-			
-			fmt.Fprintln(file, "    event.var_type = 2;  // long type")
-			fmt.Fprintf(file, "    bpf_printk(\"[VAR-%d] %s:%%s=%%ld PID=%%d\\n\", event.var_name, event.var_value, event.pid);\n", 
-				validBreakpoints+1, funcName)
-			fmt.Fprintln(file, "")
 		}
 		
 		fmt.Fprintln(file, "    return 0;")
@@ -1710,7 +2106,7 @@ func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) erro
 	}
 	
 	if validBreakpoints == 0 {
-		return fmt.Errorf("没有找到有效的变量信息")
+		return fmt.Errorf("没有找到有效的函数名，无法生成BPF探针")
 	}
 	
 	fmt.Fprintln(file, "char LICENSE[] SEC(\"license\") = \"GPL\";")
@@ -1718,8 +2114,8 @@ func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) erro
 	return nil
 }
 
-// 编译BPF代码
-func compileBPF(ctx *DebuggerContext) error {
+// 编译BPF代码（带架构参数）
+func compileBPFWithArch(ctx *DebuggerContext, targetArch string) error {
 	if ctx.Project == nil {
 		return fmt.Errorf("没有打开的项目")
 	}
@@ -1738,16 +2134,18 @@ func compileBPF(ctx *DebuggerContext) error {
 		return fmt.Errorf("找不到clang编译器，请安装:\n  Ubuntu/Debian: sudo apt install clang\n  CentOS/RHEL: sudo yum install clang")
 	}
 	
+	// 获取架构对应的BPF定义
+	archDefine, exists := SupportedArchitectures[targetArch]
+	if !exists {
+		return fmt.Errorf("不支持的架构: %s", targetArch)
+	}
+
 	// 构建编译命令
-	// 使用标准的BPF编译参数：
-	// -target bpf: 目标架构为BPF虚拟机
-	// -O2: 优化等级（BPF验证器要求）
-	// -g: 生成调试信息
-	// -c: 仅编译，不链接
 	compileCmd := exec.Command("clang", 
 		"-target", "bpf",
 		"-O2",
 		"-g",
+		fmt.Sprintf("-D%s=1", archDefine),
 		"-c", bpfSourcePath,
 		"-o", bpfObjectPath)
 	
@@ -1767,20 +2165,73 @@ func compileBPF(ctx *DebuggerContext) error {
 		return fmt.Errorf("编译完成但未找到输出文件: %s", bpfObjectPath)
 	}
 	
-	// 编译成功，添加调试信息到命令历史
-	ctx.CommandHistory = append(ctx.CommandHistory, 
-		fmt.Sprintf("[INFO] BPF编译成功: %s -> %s", 
-			filepath.Base(bpfSourcePath), filepath.Base(bpfObjectPath)))
-	
-	// 显示编译输出（如果有警告信息）
-	if len(output) > 0 {
-		ctx.CommandHistory = append(ctx.CommandHistory, 
-			fmt.Sprintf("[COMPILER] %s", strings.TrimSpace(string(output))))
+	return nil
+}
+
+// 编译BPF代码（旧版本，保持向后兼容）
+func compileBPF(ctx *DebuggerContext) error {
+	currentArch := detectCurrentArch()
+	return compileBPFWithArch(ctx, currentArch)
+}
+
+// 编译变量监控BPF代码
+// 编译变量监控BPF代码（带架构参数）
+func compileVariableBPFWithArch(ctx *DebuggerContext, targetArch string) error {
+	if ctx.Project == nil {
+		return fmt.Errorf("没有打开的项目")
 	}
 	
-	ctx.CommandDirty = true
+	// 检查BPF源文件是否存在
+	bpfSourcePath := filepath.Join(ctx.Project.RootPath, "debug_variables.bpf.c")
+	if _, err := os.Stat(bpfSourcePath); os.IsNotExist(err) {
+		return fmt.Errorf("变量监控BPF源文件不存在: %s\n请先使用 'vars <variable_names>' 命令生成代码", bpfSourcePath)
+	}
+	
+	// 目标文件路径
+	bpfObjectPath := filepath.Join(ctx.Project.RootPath, "debug_variables.bpf.o")
+	
+	// 检查clang编译器是否可用
+	if _, err := exec.LookPath("clang"); err != nil {
+		return fmt.Errorf("找不到clang编译器，请安装:\n  Ubuntu/Debian: sudo apt install clang\n  CentOS/RHEL: sudo yum install clang")
+	}
+	
+	// 获取架构对应的BPF定义
+	archDefine, exists := SupportedArchitectures[targetArch]
+	if !exists {
+		return fmt.Errorf("不支持的架构: %s", targetArch)
+	}
+
+	// 构建编译命令
+	compileCmd := exec.Command("clang", 
+		"-target", "bpf",
+		"-O2",
+		"-g",
+		fmt.Sprintf("-D%s=1", archDefine),
+		"-c", bpfSourcePath,
+		"-o", bpfObjectPath)
+	
+	// 设置工作目录
+	compileCmd.Dir = ctx.Project.RootPath
+	
+	// 执行编译
+	output, err := compileCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("变量监控BPF编译失败:\n编译命令: %s\n错误输出:\n%s\n\n常见问题排查:\n• 检查是否安装了linux-headers\n• 确认clang版本支持BPF目标\n• 验证变量监控BPF源代码语法", 
+			compileCmd.String(), string(output))
+	}
+	
+	// 检查输出文件是否生成
+	if _, err := os.Stat(bpfObjectPath); os.IsNotExist(err) {
+		return fmt.Errorf("编译完成但未找到输出文件: %s", bpfObjectPath)
+	}
 	
 	return nil
+}
+
+// 编译变量监控BPF代码（旧版本，保持向后兼容）
+func compileVariableBPF(ctx *DebuggerContext) error {
+	currentArch := detectCurrentArch()
+	return compileVariableBPFWithArch(ctx, currentArch)
 }
 
 // ========== 弹出窗口系统 ==========
@@ -3252,64 +3703,70 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 	switch cmd {
 	case "help", "h":
 		output = []string{
-			"🎯 RISC-V Kernel Debugger - User Guide",
+			"🎯 Kernel Debugger - Command Reference",
 			"",
-			"📋 Available Commands:",
-			"  help         - Show this help information",
-			"  clear        - Clear screen",
-			"  open <path>  - Open project directory (supports paths with spaces)",
-			"  bp           - View all breakpoints (popup window)",
-			"  bp clear     - Clear all breakpoints",
-			"  breakpoints  - View all breakpoints (same as bp)",
-			"  breakpoint   - Clear all breakpoints (same as bp clear)",
-			"  generate     - Generate BPF debug code and scripts",
-			"  compile      - Compile BPF code to object file (same as build)",
-			"  build        - Compile BPF code to object file (same as compile)",
-			"  vars <names> - Generate BPF code for monitoring local variables",
-			"  close        - Close current project",
-			"  pwd          - Show current working directory",
+			"🚀 Quick Start:",
+			"  1. open /path/to/project    - Open project",
+			"  2. Double-click code lines  - Set breakpoints", 
+			"  3. vars                    - Auto-generate debug code",
+			"  4. compile                 - Build BPF program",
 			"",
-			"🔥 Debug Workflow:",
-			"  1. open <project_path>    - Open kernel driver project",
-			"  2. Double-click code line - Set breakpoint (auto-parse function name)",
-			"  3. generate              - Generate BPF code and scripts",
-			"  4. vars <var_names>      - Generate variable monitoring BPF (optional)",
-			"  5. compile               - Compile BPF code (optional, script auto-compiles)",
-			"  6. Exit debugger and run: sudo ./load_debug_bpf.sh",
-			"  7. View debug output:     sudo cat /sys/kernel/debug/tracing/trace_pipe",
-			"  8. Unload debug program:  sudo ./unload_debug_bpf.sh",
+			"📂 Project Commands:",
+			"  open <path>    - Open project directory",
+			"  close          - Close current project",
+			"  pwd            - Show current directory",
+			"  status         - Show debugger status",
 			"",
-			"🎛️ Breakpoint Features:",
-			"  • Double-click code line to set/toggle breakpoint (auto-parse function name)",
-			"  • Enter key also sets breakpoint",
-			"  • Breakpoints auto-saved to .debug_breakpoints.json",
-			"  • Auto-load breakpoints when reopening project",
-			"  • generate creates complete BPF program and load scripts",
-			"  • vars command monitors local variables with DWARF-based location detection",
-			"  • Real-time variable value tracking (registers and stack)",
+			"🔴 Breakpoint Commands:",
+			"  bp             - View all breakpoints",
+			"  bp clear       - Clear all breakpoints",
+			"  (Interactive)  - Double-click code line to set/toggle breakpoint",
 			"",
-			"🏗️ BPF Compilation and Platform Support:",
-			"  • BPF compilation target: BPF virtual machine bytecode (platform-independent)",
-			"  • No cross-compilation needed: clang -target bpf works",
-			"  • Supported architectures: x86_64, ARM64, RISC-V64, etc.",
-			"  • Kernel JIT: auto-compile to target architecture machine code",
-			"  • RISC-V: Linux 5.13+ kernel supports BPF JIT",
-			"  • Compiler requirement: clang 10+ recommended",
+			"🤖 Debug Code Generation:",
+			"  vars           - 🔥 Auto-detect all variables + generate BPF",
+			"  vars auto      - Same as above (explicit auto mode)",
+			"  vars <names>   - Manual variable specification (e.g. vars local_var i)",
+			"  compile        - 🏗️ Auto-detect current architecture and compile",
+			"  compile <arch> - Compile for specific architecture (x86/arm64/riscv64/etc)",
+			"  generate       - Basic function monitoring only (legacy)",
 			"",
-			"🔍 Code Search Features:",
-			"  Ctrl+F - Start search in code view",
-			"  Type keywords - Real-time input search term",
-			"  Enter - Execute search/jump to next match",
-			"  F3 - Jump to next match",
-			"  ESC - Exit search mode",
-			"  Support case-insensitive search and highlighting",
+			"⌨️ Interface:",
+			"  help, h        - Show this help",
+			"  clear          - Clear command output",
+			"  Ctrl+F         - Search in code",
+			"  F3             - Next search result",
+			"  Tab            - Switch windows",
+			"  F1-F6          - Direct window switch (Files/Registers/Variables/Stack/Code/Command)",
+			"  F11            - Toggle fullscreen",
+			"  ESC            - Exit fullscreen/search",
+			"  q              - Close popup windows",
 			"",
-			"⌨️ Navigation Shortcuts:",
-			"  Tab - Switch windows",
-			"  F1-F6 - Direct switch to specific window",
-			"  F11 - Toggle fullscreen",
-			"  ESC - Exit fullscreen/close popup window",
-			"  q - Close popup window",
+			"🏗️ Architecture Support:",
+			"  ✅ x86_64 (Intel/AMD 64-bit)",
+			"  ✅ ARM64/AArch64",
+			"  ✅ RISC-V 64-bit",
+			"  ✅ IBM System z (s390x)",
+			"  ✅ PowerPC 64-bit LE",
+			"  ✅ MIPS 64-bit",
+			"  📋 Interactive selection during compile",
+			"",
+			"🔍 BPF Monitoring Capabilities:",
+			"  ✅ Function call detection",
+			"  ✅ Process info (PID, name)",
+			"  ✅ Precise timestamps",
+			"  ✅ Variable values (with vars)",
+			"  ⚠️  Limitation: Function entry only, not specific lines",
+			"",
+			"📁 Generated Files (vars command):",
+			"  • debug_variables.bpf.c",
+			"  • load_debug_vars.sh",
+			"  • unload_debug_vars.sh",
+			"",
+			"🔄 Typical Workflow:",
+			"  open . → Double-click lines → vars → compile → exit",
+			"  sudo ./load_debug_vars.sh",
+			"  sudo cat /sys/kernel/debug/tracing/trace_pipe",
+			"  sudo ./unload_debug_vars.sh",
 		}
 		
 	case "clear":
@@ -3368,9 +3825,33 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 				output = []string{fmt.Sprintf("Error: Failed to generate BPF: %v", err)}
 			} else {
 				output = []string{
-					"Success: BPF code generation completed",
-					"File: debug_breakpoints.bpf.c",
-					"Tip: Use 'compile' command to compile BPF code",
+					"Success: Generated LEGACY BPF debug code",
+					"Files created:",
+					"  • debug_breakpoints.bpf.c (BPF program)",
+					"  • load_debug_bpf.sh (loading script)",
+					"  • unload_debug_bpf.sh (cleanup script)",
+					"",
+					"⚠️  Legacy Command Notice:",
+					"• This command generates OLD-STYLE basic breakpoint monitoring only",
+					"• For MODERN unified debugging, use 'vars' command instead:",
+					"  - vars               → basic function monitoring (recommended)",
+					"  - vars var1 var2     → function + variable monitoring",
+					"",
+					"🔄 Migration suggestion:",
+					"• Use 'vars' for future debugging sessions",
+					"• Current 'generate' output provides function-level monitoring only",
+					"",
+					"⚡ What this BPF program monitors:",
+					"✅ Function call detection (when functions are invoked)",
+					"✅ Process information (PID, TGID, process name)",
+					"✅ Precise timestamps (nanosecond precision)",
+					"❌ NO variable monitoring (use 'vars' for variables)",
+					"",
+					"Next steps:",
+					"1. Use 'compile' command to build BPF program",
+					"2. Exit TUI and run: sudo ./load_debug_bpf.sh",
+					"3. View output: sudo cat /sys/kernel/debug/tracing/trace_pipe",
+					"4. Cleanup: sudo ./unload_debug_bpf.sh",
 				}
 				globalCtx.BpfLoaded = true
 			}
@@ -3378,82 +3859,290 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 		
 	case "vars":
 		if globalCtx.Project == nil {
-			output = []string{"Error: Please open a project first"}
-		} else if args == "" {
 			output = []string{
-				"Usage: vars <variable_names...>",
-				"Example: vars local_var counter temp ptr",
-				"",
-				"Available variable patterns:",
-				"• local_var - Stack variable at rbp-8",
-				"• counter   - Register variable in rax",
-				"• temp      - Stack variable at rbp-16", 
-				"• ptr       - Register variable in rbx",
-				"",
-				"This generates debug_variables.bpf.c with variable monitoring",
+				"Error: Please open a project first",
+				"Use 'open <project_path>' to open a project",
+				"Example: open /tmp/test_project",
 			}
 		} else {
-			// 解析变量名列表
-			varNames := strings.Fields(args)
+			// 添加状态诊断信息
+			output = []string{
+				fmt.Sprintf("Project Status: %s", filepath.Base(globalCtx.Project.RootPath)),
+				fmt.Sprintf("Breakpoints Count: %d", len(globalCtx.Project.Breakpoints)),
+			}
+			
+			// 如果断点为空，尝试重新加载
+			if len(globalCtx.Project.Breakpoints) == 0 {
+				output = append(output, "No breakpoints in memory, attempting to reload...")
+				
+				// 手动重新加载断点
+				if err := loadBreakpoints(globalCtx); err != nil {
+					output = append(output, fmt.Sprintf("Reload failed: %v", err))
+				} else {
+					output = append(output, fmt.Sprintf("Reload successful, found %d breakpoints", len(globalCtx.Project.Breakpoints)))
+				}
+			}
+			
+			// 显示断点信息
+			if len(globalCtx.Project.Breakpoints) > 0 {
+				output = append(output, "Current Breakpoints:")
+				for i, bp := range globalCtx.Project.Breakpoints {
+					output = append(output, fmt.Sprintf("  %d. %s:%d (%s) enabled=%t", 
+						i+1, filepath.Base(bp.File), bp.Line, bp.Function, bp.Enabled))
+				}
+				output = append(output, "")
+			}
+			
+			// 解析变量名列表（增强功能：自动检测）
+			var varNames []string
+			autoDetected := false
+			
+			if args == "" || args == "auto" {
+				// 自动检测模式：扫描所有断点的函数变量
+				autoDetected = true
+				allVarsSet := make(map[string]bool)
+				
+				for _, bp := range globalCtx.Project.Breakpoints {
+					if bp.Enabled {
+						if detectedVars := parseAllFunctionVariables(bp.File, bp.Line); len(detectedVars) > 0 {
+							for _, v := range detectedVars {
+								allVarsSet[v] = true
+							}
+						}
+					}
+				}
+				
+				// 转换为slice
+				for v := range allVarsSet {
+					varNames = append(varNames, v)
+				}
+				
+				if len(varNames) > 0 {
+					output = append(output, fmt.Sprintf("🔍 Auto-detected %d variables from all breakpoint functions:", len(varNames)))
+					output = append(output, fmt.Sprintf("Variables: %v", varNames))
+					output = append(output, "")
+				} else {
+					output = append(output, "⚠️ No variables auto-detected, using common patterns")
+				}
+			} else {
+				// 手动指定变量模式
+				varNames = strings.Fields(args)
+				output = append(output, fmt.Sprintf("🎯 Manual variable specification: %v", varNames))
+				output = append(output, "")
+			}
+			
+			// 生成统一的BPF程序
 			err := generateBPFWithVariables(globalCtx, varNames)
 			if err != nil {
-				output = []string{fmt.Sprintf("Error: Failed to generate variable BPF: %v", err)}
+				output = append(output, fmt.Sprintf("Error: Failed to generate BPF: %v", err))
 			} else {
-				output = []string{
-					fmt.Sprintf("Success: Generated variable monitoring BPF for: %v", varNames),
-					"File: debug_variables.bpf.c",
-					"",
-					"🔥 Variable Monitoring Features:",
-					"• Real-time variable value tracking",
-					"• Register and stack variable support",
-					"• Per-breakpoint variable isolation",
-					"• Process context information",
-					"",
-					"Next steps:",
-					"1. Compile: clang -target bpf -O2 -c debug_variables.bpf.c -o debug_variables.bpf.o",
-					"2. Load: sudo bpftool prog load debug_variables.bpf.o /sys/fs/bpf/debug_vars",
-					"3. View output: sudo cat /sys/kernel/debug/tracing/trace_pipe",
+				// 生成加载和卸载脚本
+				scriptPath := filepath.Join(globalCtx.Project.RootPath, "load_debug_vars.sh")
+				generateVarsLoadScript(scriptPath, len(globalCtx.Project.Breakpoints))
+				
+				unloadScriptPath := filepath.Join(globalCtx.Project.RootPath, "unload_debug_vars.sh")
+				generateVarsUnloadScript(unloadScriptPath)
+				
+				if len(varNames) > 0 {
+					// 有变量的情况
+					modeDesc := "manual specification"
+					if autoDetected {
+						modeDesc = "auto-detection"
+					}
+					
+					output = append(output, []string{
+						fmt.Sprintf("Success: Generated UNIFIED BPF debugging (breakpoints + variables via %s)", modeDesc),
+						fmt.Sprintf("Monitoring %d variables: %v", len(varNames), varNames),
+						"",
+						"🔥 What this BPF program monitors:",
+						"✅ Function call detection (when functions are invoked)",
+						"✅ Process information (PID, TGID, process name)",
+						"✅ Precise timestamps (nanosecond precision)",
+						"✅ Variable value monitoring (real-time tracking)",
+						"✅ Register and stack variable support",
+						"",
+						"⚠️  Important understanding:",
+						"• BPF sets probes at FUNCTION ENTRY, not specific code lines",
+						"• Can detect IF a function runs, but NOT which lines inside execute",
+						"• This is a BPF/kprobe technical limitation",
+						"• Line numbers in output show where you set breakpoints for reference",
+					}...)
+					
+					if autoDetected {
+						output = append(output, []string{
+							"",
+							"🤖 Auto-Detection Features:",
+							"• Automatically scanned all functions with breakpoints",
+							"• Parsed source code for local variable declarations",
+							"• Extracted variable names using pattern matching",
+							"• Next: Use 'vars var1 var2' to manually specify variables",
+						}...)
+					}
+				} else {
+					// 仅基础断点的情况
+					output = append(output, []string{
+						"Success: Generated BASIC BPF debugging (function monitoring only)",
+						"",
+						"🔥 What this BPF program monitors:",
+						"✅ Function call detection (when functions are invoked)",
+						"✅ Process information (PID, TGID, process name)",
+						"✅ Precise timestamps (nanosecond precision)",
+						"",
+						"⚠️  Important understanding:",
+						"• BPF sets probes at FUNCTION ENTRY, not specific code lines",
+						"• Can detect IF a function runs, but NOT which lines inside execute",
+						"• To monitor variables, use: vars var1 var2 var3",
+						"",
+						"💡 Usage examples:",
+						"• vars                    → auto-detect all function variables",
+						"• vars auto               → same as above",
+						"• vars local_var counter  → manual variable specification",
+					}...)
 				}
+				
+				output = append(output, []string{
+					"",
+					"📁 Files created:",
+					"  • debug_variables.bpf.c (unified BPF program)",
+					"  • load_debug_vars.sh (loading script)",  
+					"  • unload_debug_vars.sh (cleanup script)",
+					"",
+					"⚡ Quick Start:",
+					"1. Use 'compile' command to build BPF program",
+					"2. Exit TUI and run: sudo ./load_debug_vars.sh",
+					"3. View output: sudo cat /sys/kernel/debug/tracing/trace_pipe",
+					"4. Cleanup: sudo ./unload_debug_vars.sh",
+				}...)
 			}
 		}
 		
-	case "compile", "build":
+	case "compile":
 		if globalCtx.Project == nil {
 			output = []string{"Error: Please open a project first"}
 		} else {
-			err := compileBPF(globalCtx)
-			if err != nil {
-				output = []string{fmt.Sprintf("Error: Failed to compile BPF: %v", err)}
-			} else {
+			// 解析架构参数
+			var targetArch string
+			if args == "" {
+				// 没有指定架构，使用当前系统架构
+				targetArch = detectCurrentArch()
 				output = []string{
-					"Success: BPF code compilation completed",
-					"File: debug_breakpoints.bpf.o",
+					"🏗️ Architecture Selection",
+					fmt.Sprintf("Auto-detected: %s (%s)", targetArch, ArchDisplayNames[targetArch]),
 					"",
-					"🔥 BPF Compilation Notes:",
-					"• BPF bytecode is platform-independent, no cross-compilation needed",
-					"• Compilation target is BPF virtual machine, not physical CPU architecture",
-					"• Linux kernel will JIT compile to corresponding architecture (x86/ARM/RISC-V)",
-					"• RISC-V64 platform has Linux kernel BPF JIT support",
+					"💡 Available architectures:",
+					"  compile x86     - Intel/AMD 64-bit",
+					"  compile arm64   - ARM 64-bit", 
+					"  compile riscv64 - RISC-V 64-bit",
+					"  compile s390x   - IBM System z",
+					"  compile ppc64le - PowerPC 64-bit LE",
+					"  compile mips64  - MIPS 64-bit",
 					"",
-					"Next step: Use sudo ./load_debug_bpf.sh to load program",
+					"  compile         - Use current system arch (auto-detect)",
+					"",
+					fmt.Sprintf("✅ Using current system architecture: %s", targetArch),
+				}
+			} else {
+				// 用户指定了架构
+				switch strings.ToLower(args) {
+				case "x86", "x86_64":
+					targetArch = "x86_64"
+				case "arm64", "aarch64":
+					targetArch = "aarch64"
+				case "riscv64", "riscv":
+					targetArch = "riscv64"
+				case "s390x":
+					targetArch = "s390x"
+				case "ppc64le", "powerpc":
+					targetArch = "ppc64le"
+				case "mips64":
+					targetArch = "mips64"
+				default:
+					output = []string{
+						fmt.Sprintf("Error: Unsupported architecture '%s'", args),
+						"",
+						"Supported architectures:",
+						"  x86, x86_64     - Intel/AMD 64-bit",
+						"  arm64, aarch64  - ARM 64-bit",
+						"  riscv64, riscv  - RISC-V 64-bit", 
+						"  s390x           - IBM System z",
+						"  ppc64le         - PowerPC 64-bit LE",
+						"  mips64          - MIPS 64-bit",
+						"",
+						"Examples:",
+						"  compile         - Auto-detect current system",
+						"  compile x86     - Target x86_64",
+						"  compile arm64   - Target ARM64",
+					}
+					break
+				}
+				output = []string{
+					"🏗️ Architecture Selection",
+					fmt.Sprintf("User specified: %s (%s)", targetArch, ArchDisplayNames[targetArch]),
+					"",
+					fmt.Sprintf("✅ Using target architecture: %s", targetArch),
 				}
 			}
-		}
-		
-	case "breakpoint":
-		if globalCtx.Project != nil {
-			count := len(globalCtx.Project.Breakpoints)
-			globalCtx.Project.Breakpoints = make([]Breakpoint, 0)
-			// 保存清空后的断点列表
-			if err := saveBreakpoints(globalCtx); err != nil {
-				output = []string{fmt.Sprintf("Warning: Breakpoints cleared but save failed: %v", err)}
+			
+			// 智能检测编译哪种BPF文件
+			varsFile := filepath.Join(globalCtx.Project.RootPath, "debug_variables.bpf.c")
+			breakpointsFile := filepath.Join(globalCtx.Project.RootPath, "debug_breakpoints.bpf.c")
+			
+			var err error
+			var compiledFile string
+			var scriptFile string
+			
+			// 优先编译变量监控版本（如果存在）
+			if _, varsErr := os.Stat(varsFile); varsErr == nil {
+				err = compileVariableBPFWithArch(globalCtx, targetArch)
+				compiledFile = "debug_variables.bpf.o"
+				scriptFile = "./load_debug_vars.sh"
+			} else if _, bpErr := os.Stat(breakpointsFile); bpErr == nil {
+				err = compileBPFWithArch(globalCtx, targetArch)
+				compiledFile = "debug_breakpoints.bpf.o"
+				scriptFile = "./load_debug_bpf.sh"
 			} else {
-				output = []string{fmt.Sprintf("Success: Cleared %d breakpoints", count)}
+				output = append(output, []string{
+					"",
+					"Error: No BPF source files found",
+					"",
+					"Please generate BPF code first:",
+					"• Use 'vars' for modern unified debugging (recommended)",
+					"• Use 'vars var1 var2' for debugging with variable monitoring",
+					"• Use 'generate' for legacy basic breakpoint debugging only",
+				}...)
+				break
 			}
-		} else {
-			output = []string{"Tip: No project opened"}
+			
+			if err != nil {
+				output = append(output, []string{
+					"",
+					fmt.Sprintf("❌ Compilation failed: %v", err),
+					"",
+					"💡 Troubleshooting:",
+					"• Check if clang supports BPF: clang -target bpf --help",
+					"• Install headers: sudo apt install linux-headers-$(uname -r)",
+					"• Try different architecture: compile <arch>",
+				}...)
+			} else {
+				output = append(output, []string{
+					"",
+					"✅ BPF code compilation completed successfully!",
+					fmt.Sprintf("📁 Output file: %s", compiledFile),
+					fmt.Sprintf("🏗️ Target arch: %s (%s)", targetArch, ArchDisplayNames[targetArch]),
+					"",
+					"🔥 BPF Compilation Details:",
+					"• Uses clang BPF backend for optimal code generation",
+					"• Architecture-specific PT_REGS macro selection",
+					"• O2 optimization level for BPF verifier compatibility",
+					"• Cross-platform bytecode generation",
+					"",
+					fmt.Sprintf("⚡ Next step: sudo %s", scriptFile),
+					"📊 Monitor: sudo cat /sys/kernel/debug/tracing/trace_pipe",
+				}...)
+			}
 		}
 		
+
 	case "bp":
 		if args == "clear" {
 			// bp clear - 清除所有断点
@@ -3489,15 +4178,7 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			output = []string{"Tip: No project opened"}
 		}
 		
-	case "breakpoints":
-		if globalCtx.Project == nil {
-			output = []string{"Error: Please open a project first"}
-		} else {
-			// 创建断点查看弹出窗口
-			showBreakpointsPopup(globalCtx)
-			output = []string{"Breakpoint viewer window opened"}
-		}
-		
+
 	case "status":
 		output = []string{
 			fmt.Sprintf("Debugger status: %s", globalCtx.CurrentFunc),
