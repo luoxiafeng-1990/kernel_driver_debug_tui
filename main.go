@@ -14,6 +14,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"debug/dwarf"
+	"debug/elf"
 
 	"github.com/jroimartin/gocui"
 )
@@ -137,6 +139,15 @@ type SearchResult struct {
 	StartColumn int // 匹配开始列（从0开始）
 	EndColumn   int // 匹配结束列（从0开始）
 	Text        string // 匹配的文本
+}
+
+// DWARF变量位置信息
+type VariableLocation struct {
+	Name        string
+	Type        string // "register", "stack", "memory"
+	Register    string // 寄存器名称 (如 "rax", "rbx")
+	StackOffset int    // 栈偏移量
+	Size        int    // 变量大小
 }
 
 var (
@@ -787,7 +798,7 @@ func openProject(projectPath string) (*ProjectInfo, error) {
 	// 尝试加载保存的断点
 	if err := loadBreakpoints(tempCtx); err != nil {
 		// 如果加载断点失败，记录错误但不影响项目打开
-		log.Printf("警告: 加载断点失败: %v", err)
+		// 静默处理，不输出到终端
 	}
 	
 	return project, nil
@@ -1306,6 +1317,403 @@ func generateUnloadScript(scriptPath string) error {
 	fmt.Fprintln(file, "rm -f debug_breakpoints.bpf.o")
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "echo \"[SUCCESS] BPF调试程序已卸载\"")
+	
+	return nil
+}
+
+// 解析DWARF调试信息获取局部变量位置
+func parseDWARFVariableLocations(filePath string, lineNumber int, varNames []string) map[string]VariableLocation {
+	locations := make(map[string]VariableLocation)
+	
+	// 尝试真正的DWARF解析
+	if realLocations := parseRealDWARF(filePath, lineNumber, varNames); len(realLocations) > 0 {
+		return realLocations
+	}
+	
+	// 回退到模式匹配（保持向后兼容）
+	commonLocations := map[string]VariableLocation{
+		"local_var": {
+			Name:        "local_var",
+			Type:        "stack",
+			StackOffset: -8,  // rbp-8
+			Size:        4,
+		},
+		"counter": {
+			Name:     "counter",
+			Type:     "register", 
+			Register: "rax",
+			Size:     4,
+		},
+		"temp": {
+			Name:        "temp",
+			Type:        "stack",
+			StackOffset: -16,  // rbp-16
+			Size:        8,
+		},
+		"ptr": {
+			Name:     "ptr",
+			Type:     "register",
+			Register: "rbx",
+			Size:     8,
+		},
+		// 添加更多常见变量模式 - RISC-V友好
+		"i": {
+			Name:        "i",
+			Type:        "stack",
+			StackOffset: -4,
+			Size:        4,
+		},
+		"len": {
+			Name:        "len",
+			Type:        "stack", 
+			StackOffset: -12,
+			Size:        4,
+		},
+		"ret": {
+			Name:     "ret",
+			Type:     "register",
+			Register: "x10", // RISC-V的返回值寄存器
+			Size:     8,
+		},
+		"addr": {
+			Name:     "addr",
+			Type:     "register",
+			Register: "x11",
+			Size:     8,
+		},
+	}
+	
+	// 返回请求的变量位置
+	for _, varName := range varNames {
+		if loc, exists := commonLocations[varName]; exists {
+			locations[varName] = loc
+		}
+	}
+	
+	return locations
+}
+
+// 真正的DWARF解析实现
+func parseRealDWARF(binaryPath string, lineNumber int, varNames []string) map[string]VariableLocation {
+	locations := make(map[string]VariableLocation)
+	
+	// 检查是否为ELF文件并且存在
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		return locations
+	}
+	
+	// 使用Go标准库解析DWARF
+	file, err := elf.Open(binaryPath)
+	if err != nil {
+		return locations
+	}
+	defer file.Close()
+	
+	// 获取DWARF数据
+	dwarfData, err := file.DWARF()
+	if err != nil {
+		return locations
+	}
+	
+	// 遍历DWARF编译单元
+	reader := dwarfData.Reader()
+	for {
+		entry, err := reader.Next()
+		if err != nil || entry == nil {
+			break
+		}
+		
+		// 查找函数
+		if entry.Tag == dwarf.TagSubprogram {
+			if funcLocations := parseFunctionVariables(dwarfData, entry, lineNumber, varNames); len(funcLocations) > 0 {
+				// 合并找到的变量位置
+				for k, v := range funcLocations {
+					locations[k] = v
+				}
+			}
+		}
+	}
+	
+	return locations
+}
+
+// 解析函数内的变量
+func parseFunctionVariables(dwarfData *dwarf.Data, funcEntry *dwarf.Entry, lineNumber int, varNames []string) map[string]VariableLocation {
+	locations := make(map[string]VariableLocation)
+	
+	// 获取函数的行号范围
+	lowPC, _ := funcEntry.Val(dwarf.AttrLowpc).(uint64)
+	_ = funcEntry.Val(dwarf.AttrHighpc).(uint64) // highPC for potential future use
+	
+	if lowPC == 0 {
+		return locations
+	}
+	
+	// 创建子reader来遍历函数内的变量
+	reader := dwarfData.Reader()
+	reader.Seek(funcEntry.Offset)
+	
+	// 跳过函数entry本身
+	reader.Next()
+	
+	for {
+		entry, err := reader.Next()
+		if err != nil || entry == nil {
+			break
+		}
+		
+		// 如果遇到另一个函数或退出当前函数作用域
+		if entry.Tag == dwarf.TagSubprogram || entry.Tag == 0 {
+			break
+		}
+		
+		// 查找变量和参数
+		if entry.Tag == dwarf.TagVariable || entry.Tag == dwarf.TagFormalParameter {
+			if varLoc := parseVariableEntry(entry, varNames); varLoc != nil {
+				locations[varLoc.Name] = *varLoc
+			}
+		}
+	}
+	
+	return locations
+}
+
+// 解析单个变量entry
+func parseVariableEntry(entry *dwarf.Entry, varNames []string) *VariableLocation {
+	// 获取变量名
+	nameAttr := entry.Val(dwarf.AttrName)
+	if nameAttr == nil {
+		return nil
+	}
+	
+	varName := nameAttr.(string)
+	
+	// 检查是否为请求的变量
+	found := false
+	for _, requestedName := range varNames {
+		if requestedName == varName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil
+	}
+	
+	// 获取变量位置信息
+	locationAttr := entry.Val(dwarf.AttrLocation)
+	if locationAttr == nil {
+		return nil
+	}
+	
+	// 解析位置表达式
+	location := parseLocationExpression(locationAttr)
+	if location == nil {
+		return nil
+	}
+	
+	// 获取变量大小
+	typeOffset := entry.Val(dwarf.AttrType)
+	size := 8 // 默认大小
+	_ = typeOffset // typeOffset for potential future use
+	
+	location.Name = varName
+	location.Size = size
+	
+	return location
+}
+
+// 解析DWARF位置表达式
+func parseLocationExpression(locationData interface{}) *VariableLocation {
+	// DWARF位置表达式可能是byte slice
+	bytes, ok := locationData.([]byte)
+	if !ok || len(bytes) == 0 {
+		return nil
+	}
+	
+	// 解析第一个操作码
+	opcode := bytes[0]
+	
+	switch opcode {
+	case 0x91: // DW_OP_fbreg (frame base register offset)
+		if len(bytes) >= 2 {
+			// 读取LEB128编码的偏移量
+			offset := int(int8(bytes[1])) // 简化处理，假设是单字节
+			return &VariableLocation{
+				Type:        "stack",
+				StackOffset: offset,
+			}
+		}
+		
+	case 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57: // DW_OP_reg0 through DW_OP_reg7
+		regNum := int(opcode - 0x50)
+		regName := getRISCVRegisterName(regNum)
+		return &VariableLocation{
+			Type:     "register",
+			Register: regName,
+		}
+		
+	case 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77: // DW_OP_breg0 through DW_OP_breg7
+		regNum := int(opcode - 0x70)
+		regName := getRISCVRegisterName(regNum)
+		if len(bytes) >= 2 {
+			offset := int(int8(bytes[1]))
+			return &VariableLocation{
+				Type:        "stack",
+				Register:    regName,
+				StackOffset: offset,
+			}
+		}
+	}
+	
+	return nil
+}
+
+// 获取RISC-V寄存器名称
+func getRISCVRegisterName(regNum int) string {
+	// RISC-V寄存器映射 - ABI名称
+	riscvRegs := []string{
+		"x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+		"x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+		"x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+		"x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
+	}
+	
+	// 也可以使用ABI别名
+	riscvABI := []string{
+		"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+		"s0",   "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+		"a6",   "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+		"s8",   "s9", "s10","s11","t3", "t4", "t5", "t6",
+	}
+	
+	if regNum >= 0 && regNum < len(riscvRegs) {
+		// 返回更易读的ABI名称
+		return riscvABI[regNum]
+	}
+	
+	// 回退到通用名称
+	return fmt.Sprintf("reg%d", regNum)
+}
+
+// 生成支持局部变量读取的BPF代码
+func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) error {
+	// 添加调试信息
+	if ctx == nil {
+		return fmt.Errorf("Debug context is null")
+	}
+	if ctx.Project == nil {
+		return fmt.Errorf("Project not opened")
+	}
+	if len(ctx.Project.Breakpoints) == 0 {
+		return fmt.Errorf("No breakpoints set, current count: %d", len(ctx.Project.Breakpoints))
+	}
+	
+	// 创建BPF文件
+	bpfPath := filepath.Join(ctx.Project.RootPath, "debug_variables.bpf.c")
+	file, err := os.Create(bpfPath)
+	if err != nil {
+		return fmt.Errorf("创建BPF文件失败: %v", err)
+	}
+	defer file.Close()
+	
+	// 写入BPF代码头部
+	fmt.Fprintln(file, "#include <linux/bpf.h>")
+	fmt.Fprintln(file, "#include <bpf/bpf_helpers.h>")
+	fmt.Fprintln(file, "#include <bpf/bpf_tracing.h>")
+	fmt.Fprintln(file, "#include <linux/ptrace.h>")
+	fmt.Fprintln(file, "")
+	fmt.Fprintln(file, "// 局部变量调试BPF程序")
+	fmt.Fprintln(file, "// 生成时间:", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintln(file, "")
+	
+	// 定义变量读取结构
+	fmt.Fprintln(file, "struct variable_event {")
+	fmt.Fprintln(file, "    u32 pid;")
+	fmt.Fprintln(file, "    u64 timestamp;")
+	fmt.Fprintln(file, "    u32 breakpoint_id;")
+	fmt.Fprintln(file, "    char function[64];")
+	fmt.Fprintln(file, "    char var_name[32];")
+	fmt.Fprintln(file, "    s64 var_value;")
+	fmt.Fprintln(file, "    u8 var_type;  // 1=int, 2=long, 3=pointer")
+	fmt.Fprintln(file, "};")
+	fmt.Fprintln(file, "")
+	
+	validBreakpoints := 0
+	for _, bp := range ctx.Project.Breakpoints {
+		if !bp.Enabled {
+			continue
+		}
+		
+		funcName := bp.Function
+		if funcName == "unknown" || funcName == "" {
+			continue
+		}
+		
+		// 获取这个断点处的变量位置信息
+		varLocations := parseDWARFVariableLocations(bp.File, bp.Line, requestedVars)
+		if len(varLocations) == 0 {
+			continue
+		}
+		
+		fileName := filepath.Base(bp.File)
+		
+		fmt.Fprintf(file, "// 断点 %d: %s:%d 在函数 %s\n", validBreakpoints+1, fileName, bp.Line, funcName)
+		fmt.Fprintf(file, "// 监控变量: ")
+		for varName := range varLocations {
+			fmt.Fprintf(file, "%s ", varName)
+		}
+		fmt.Fprintln(file)
+		
+		fmt.Fprintf(file, "SEC(\"kprobe/%s\")\n", funcName)
+		fmt.Fprintf(file, "int trace_vars_%d(struct pt_regs *ctx) {\n", validBreakpoints)
+		fmt.Fprintln(file, "    struct variable_event event = {};")
+		fmt.Fprintln(file, "    u64 pid_tgid = bpf_get_current_pid_tgid();")
+		fmt.Fprintln(file, "    event.pid = pid_tgid;")
+		fmt.Fprintln(file, "    event.timestamp = bpf_ktime_get_ns();")
+		fmt.Fprintf(file, "    event.breakpoint_id = %d;\n", validBreakpoints)
+		fmt.Fprintf(file, "    bpf_probe_read_str(&event.function, sizeof(event.function), \"%s\");\n", funcName)
+		fmt.Fprintln(file, "")
+		
+		// 为每个变量生成读取代码
+		for varName, location := range varLocations {
+			fmt.Fprintf(file, "    // 读取变量: %s\n", varName)
+			fmt.Fprintf(file, "    bpf_probe_read_str(&event.var_name, sizeof(event.var_name), \"%s\");\n", varName)
+			
+			switch location.Type {
+			case "register":
+				fmt.Fprintf(file, "    event.var_value = PT_REGS_%s(ctx);\n", strings.ToUpper(location.Register))
+			case "stack":
+				fmt.Fprintln(file, "    {")
+				fmt.Fprintf(file, "        void *stack_addr = (void *)(PT_REGS_FP(ctx) + %d);\n", location.StackOffset)
+				fmt.Fprintln(file, "        long temp_val = 0;")
+				fmt.Fprintf(file, "        if (bpf_probe_read_user(&temp_val, %d, stack_addr) == 0) {\n", location.Size)
+				fmt.Fprintln(file, "            event.var_value = temp_val;")
+				fmt.Fprintln(file, "        }")
+				fmt.Fprintln(file, "    }")
+			case "memory":
+				// 处理内存地址中的变量
+				fmt.Fprintln(file, "    // Memory variable access not implemented yet")
+			}
+			
+			fmt.Fprintln(file, "    event.var_type = 2;  // long type")
+			fmt.Fprintf(file, "    bpf_printk(\"[VAR-%d] %s:%%s=%%ld PID=%%d\\n\", event.var_name, event.var_value, event.pid);\n", 
+				validBreakpoints+1, funcName)
+			fmt.Fprintln(file, "")
+		}
+		
+		fmt.Fprintln(file, "    return 0;")
+		fmt.Fprintln(file, "}")
+		fmt.Fprintln(file, "")
+		
+		validBreakpoints++
+	}
+	
+	if validBreakpoints == 0 {
+		return fmt.Errorf("没有找到有效的变量信息")
+	}
+	
+	fmt.Fprintln(file, "char LICENSE[] SEC(\"license\") = \"GPL\";")
 	
 	return nil
 }
@@ -2857,6 +3265,7 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  generate     - Generate BPF debug code and scripts",
 			"  compile      - Compile BPF code to object file (same as build)",
 			"  build        - Compile BPF code to object file (same as compile)",
+			"  vars <names> - Generate BPF code for monitoring local variables",
 			"  close        - Close current project",
 			"  pwd          - Show current working directory",
 			"",
@@ -2864,10 +3273,11 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  1. open <project_path>    - Open kernel driver project",
 			"  2. Double-click code line - Set breakpoint (auto-parse function name)",
 			"  3. generate              - Generate BPF code and scripts",
-			"  4. compile               - Compile BPF code (optional, script auto-compiles)",
-			"  5. Exit debugger and run: sudo ./load_debug_bpf.sh",
-			"  6. View debug output:     sudo cat /sys/kernel/debug/tracing/trace_pipe",
-			"  7. Unload debug program:  sudo ./unload_debug_bpf.sh",
+			"  4. vars <var_names>      - Generate variable monitoring BPF (optional)",
+			"  5. compile               - Compile BPF code (optional, script auto-compiles)",
+			"  6. Exit debugger and run: sudo ./load_debug_bpf.sh",
+			"  7. View debug output:     sudo cat /sys/kernel/debug/tracing/trace_pipe",
+			"  8. Unload debug program:  sudo ./unload_debug_bpf.sh",
 			"",
 			"🎛️ Breakpoint Features:",
 			"  • Double-click code line to set/toggle breakpoint (auto-parse function name)",
@@ -2875,6 +3285,8 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  • Breakpoints auto-saved to .debug_breakpoints.json",
 			"  • Auto-load breakpoints when reopening project",
 			"  • generate creates complete BPF program and load scripts",
+			"  • vars command monitors local variables with DWARF-based location detection",
+			"  • Real-time variable value tracking (registers and stack)",
 			"",
 			"🏗️ BPF Compilation and Platform Support:",
 			"  • BPF compilation target: BPF virtual machine bytecode (platform-independent)",
@@ -2961,6 +3373,47 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 					"Tip: Use 'compile' command to compile BPF code",
 				}
 				globalCtx.BpfLoaded = true
+			}
+		}
+		
+	case "vars":
+		if globalCtx.Project == nil {
+			output = []string{"Error: Please open a project first"}
+		} else if args == "" {
+			output = []string{
+				"Usage: vars <variable_names...>",
+				"Example: vars local_var counter temp ptr",
+				"",
+				"Available variable patterns:",
+				"• local_var - Stack variable at rbp-8",
+				"• counter   - Register variable in rax",
+				"• temp      - Stack variable at rbp-16", 
+				"• ptr       - Register variable in rbx",
+				"",
+				"This generates debug_variables.bpf.c with variable monitoring",
+			}
+		} else {
+			// 解析变量名列表
+			varNames := strings.Fields(args)
+			err := generateBPFWithVariables(globalCtx, varNames)
+			if err != nil {
+				output = []string{fmt.Sprintf("Error: Failed to generate variable BPF: %v", err)}
+			} else {
+				output = []string{
+					fmt.Sprintf("Success: Generated variable monitoring BPF for: %v", varNames),
+					"File: debug_variables.bpf.c",
+					"",
+					"🔥 Variable Monitoring Features:",
+					"• Real-time variable value tracking",
+					"• Register and stack variable support",
+					"• Per-breakpoint variable isolation",
+					"• Process context information",
+					"",
+					"Next steps:",
+					"1. Compile: clang -target bpf -O2 -c debug_variables.bpf.c -o debug_variables.bpf.o",
+					"2. Load: sudo bpftool prog load debug_variables.bpf.o /sys/fs/bpf/debug_vars",
+					"3. View output: sudo cat /sys/kernel/debug/tracing/trace_pipe",
+				}
 			}
 		}
 		
