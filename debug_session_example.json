@@ -1,0 +1,500 @@
+{
+  "session_id": "20241208_143025_abc12345",
+  "session_name": "内核模块test_function调试会话",
+  "start_time": "2024-12-08T14:30:25.123456Z",
+  "end_time": "2024-12-08T14:45:30.789012Z",
+  "duration": 905665,
+  "status": "ended",
+  "project": {
+    "name": "kernel_driver_debug_tui",
+    "root_path": "/home/rlk/xiafeng.luo/MoneyProject/kernel_driver_debug_tui",
+    "version": "1.0.0",
+    "build_info": {
+      "compiler_version": "gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.2)",
+      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],
+      "debug_symbols": true,
+      "architecture": "x86_64",
+      "optimization_level": "O0",
+      "build_time": "2024-12-08T14:25:00.000Z"
+    },
+    "source_files": [
+      {
+        "path": "/home/rlk/xiafeng.luo/MoneyProject/kernel_driver_debug_tui/simple_test.c",
+        "relative_path": "simple_test.c",
+        "size": 2048,
+        "last_modified": "2024-12-08T14:20:15.000Z",
+        "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "line_count": 89,
+        "function_count": 3,
+        "functions": [
+          {
+            "name": "test_function",
+            "start_line": 25,
+            "end_line": 45,
+            "parameters": [
+              {
+                "name": "param",
+                "type": "int",
+                "size": 4
+              }
+            ],
+            "local_variables": [
+              {
+                "name": "local_var",
+                "type": "int",
+                "size": 4,
+                "scope": "local",
+                "location": {
+                  "name": "local_var",
+                  "type": "register",
+                  "register": "rbx",
+                  "stack_offset": 0,
+                  "size": 4
+                }
+              },
+              {
+                "name": "counter",
+                "type": "int",
+                "size": 4,
+                "scope": "local",
+                "location": {
+                  "name": "counter",
+                  "type": "register",
+                  "register": "rax",
+                  "stack_offset": 0,
+                  "size": 4
+                }
+              }
+            ],
+            "return_type": "void"
+          }
+        ]
+      }
+    ],
+    "dependencies": ["linux/module.h", "linux/kernel.h", "linux/init.h"]
+  },
+  "environment": {
+    "operating_system": "Linux",
+    "kernel_version": "5.15.0-136-generic",
+    "architecture": "x86_64",
+    "cpu_info": {
+      "model": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+      "cores": 8,
+      "frequency": "3.70GHz",
+      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]
+    },
+    "memory_info": {
+      "total": 17179869184,
+      "available": 8589934592,
+      "used": 8589934592,
+      "swap_total": 2147483648,
+      "swap_used": 0
+    },
+    "hostname": "rlk-dev-machine",
+    "username": "rlk",
+    "working_directory": "/home/rlk/xiafeng.luo/MoneyProject/kernel_driver_debug_tui",
+    "environment_vars": {
+      "PATH": "/usr/local/bin:/usr/bin:/bin",
+      "HOME": "/home/rlk",
+      "USER": "rlk"
+    },
+    "system_time": "2024-12-08T14:30:25.123456Z"
+  },
+  "breakpoints": [
+    {
+      "file": "/home/rlk/xiafeng.luo/MoneyProject/kernel_driver_debug_tui/simple_test.c",
+      "line": 30,
+      "function": "test_function",
+      "enabled": true,
+      "id": "bp_001_abc1",
+      "created_time": "2024-12-08T14:31:15.000Z",
+      "last_triggered": "2024-12-08T14:35:22.345Z",
+      "trigger_count": 3,
+      "code_context": {
+        "line_content": "    counter = local_var + param;",
+        "before_lines": [
+          "void test_function(int param) {",
+          "    int local_var = 10;",
+          "    int counter = 0;"
+        ],
+        "after_lines": [
+          "    for (int i = 0; i < 10; i++) {",
+          "        temp[i] = counter * i;",
+          "    }"
+        ],
+        "indent_level": 4,
+        "function_scope": "test_function"
+      },
+      "condition": "",
+      "hit_condition": "",
+      "hit_count": 0,
+      "watched_variables": ["local_var", "counter", "param"],
+      "action": "break",
+      "log_message": "",
+      "debug_info": {
+        "has_debug_symbols": true,
+        "dwarf_offset": 4660,
+        "address": 0,
+        "assembly": [
+          "mov    %ebx, %eax",
+          "add    %ecx, %eax",
+          "mov    %eax, -0x4(%rbp)"
+        ]
+      },
+      "status": "active",
+      "last_error": ""
+    }
+  ],
+  "breakpoint_history": [
+    {
+      "id": "event_001",
+      "breakpoint_id": "bp_001_abc1",
+      "event_type": "created",
+      "timestamp": "2024-12-08T14:31:15.000Z",
+      "user": "rlk",
+      "description": "断点在simple_test.c:30创建",
+      "data": {
+        "file": "simple_test.c",
+        "line": 30,
+        "function": "test_function"
+      }
+    },
+    {
+      "id": "event_002",
+      "breakpoint_id": "bp_001_abc1",
+      "event_type": "triggered",
+      "timestamp": "2024-12-08T14:35:22.345Z",
+      "user": "system",
+      "description": "断点被触发",
+      "data": {
+        "trigger_count": 1,
+        "pid": 1234,
+        "command": "insmod"
+      }
+    }
+  ],
+  "debug_events": [
+    {
+      "id": "debug_001",
+      "breakpoint_id": "bp_001_abc1",
+      "timestamp": "2024-12-08T14:35:22.345Z",
+      "process_info": {
+        "pid": 1234,
+        "tgid": 1234,
+        "ppid": 1000,
+        "command": "insmod",
+        "command_line": ["insmod", "simple_test.ko"],
+        "working_directory": "/home/rlk/xiafeng.luo/MoneyProject/kernel_driver_debug_tui",
+        "environment": {
+          "MODULE_NAME": "simple_test",
+          "KERNEL_VERSION": "5.15.0-136-generic"
+        }
+      },
+      "execution_context": {
+        "current_function": "test_function",
+        "current_file": "simple_test.c",
+        "current_line": 30,
+        "thread_id": 1234,
+        "cpu_context": {
+          "instruction_pointer": 0,
+          "stack_pointer": 0,
+          "frame_pointer": 0,
+          "flags": 514
+        }
+      },
+      "variable_snapshots": [
+        {
+          "name": "local_var",
+          "type": "int",
+          "value": 10,
+          "raw_value": "0x0000000a",
+          "size": 4,
+          "address": 0,
+          "is_pointer": false
+        },
+        {
+          "name": "counter",
+          "type": "int",
+          "value": 0,
+          "raw_value": "0x00000000",
+          "size": 4,
+          "address": 0,
+          "is_pointer": false
+        },
+        {
+          "name": "param",
+          "type": "int",
+          "value": 42,
+          "raw_value": "0x0000002a",
+          "size": 4,
+          "address": 0,
+          "is_pointer": false
+        }
+      ],
+      "call_stack": [
+        {
+          "level": 0,
+          "function": "test_function",
+          "file": "simple_test.c",
+          "line": 30,
+          "address": 0,
+          "arguments": [
+            {
+              "name": "param",
+              "type": "int",
+              "value": 42,
+              "raw_value": "0x0000002a",
+              "size": 4,
+              "address": 0,
+              "is_pointer": false
+            }
+          ],
+          "local_variables": [
+            {
+              "name": "local_var",
+              "type": "int",
+              "value": 10,
+              "raw_value": "0x0000000a",
+              "size": 4,
+              "address": 0,
+              "is_pointer": false
+            }
+          ]
+        }
+      ],
+      "register_state": {
+        "rax": 0,
+        "rbx": 10,
+        "rcx": 42,
+        "rdx": 0,
+        "rsi": 0,
+        "rdi": 0,
+        "rbp": 0,
+        "rsp": 0,
+        "rip": 0,
+        "rflags": 514
+      },
+      "memory_snapshots": [
+        {
+          "start_address": 0,
+          "size": 80,
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+          "type": "stack",
+          "description": "temp数组内存区域"
+        }
+      ],
+      "performance_data": {
+        "cpu_usage": 5.5,
+        "memory_usage": 4096,
+        "execution_time": 125000,
+        "system_calls": [
+          {
+            "name": "printk",
+            "parameters": ["test_function called with param=%d", 42],
+            "return_value": 35,
+            "duration": 25000
+          }
+        ]
+      }
+    }
+  ],
+  "variable_history": [
+    {
+      "id": "var_001",
+      "breakpoint_id": "bp_001_abc1",
+      "variable_name": "counter",
+      "timestamp": "2024-12-08T14:35:22.345Z",
+      "old_value": null,
+      "new_value": 0,
+      "value_changed": true,
+      "change_type": "created",
+      "context": {
+        "function": "test_function",
+        "file": "simple_test.c",
+        "line": 30,
+        "scope": "local"
+      }
+    },
+    {
+      "id": "var_002",
+      "breakpoint_id": "bp_001_abc1",
+      "variable_name": "counter",
+      "timestamp": "2024-12-08T14:35:22.450Z",
+      "old_value": 0,
+      "new_value": 52,
+      "value_changed": true,
+      "change_type": "modified",
+      "context": {
+        "function": "test_function",
+        "file": "simple_test.c",
+        "line": 30,
+        "scope": "local"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "id": "op_001",
+      "type": "set_breakpoint",
+      "timestamp": "2024-12-08T14:31:15.000Z",
+      "user": "rlk",
+      "parameters": {
+        "file": "simple_test.c",
+        "line": 30,
+        "function": "test_function"
+      },
+      "result": {
+        "success": true,
+        "message": "断点设置成功",
+        "data": {
+          "breakpoint_id": "bp_001_abc1"
+        }
+      },
+      "duration": 150
+    },
+    {
+      "id": "op_002",
+      "type": "generate_bpf",
+      "timestamp": "2024-12-08T14:32:00.000Z",
+      "user": "rlk",
+      "parameters": {
+        "target_arch": "x86_64",
+        "breakpoint_count": 1
+      },
+      "result": {
+        "success": true,
+        "message": "BPF代码生成成功",
+        "data": {
+          "bpf_file": "debug_breakpoints.bpf.c",
+          "size": 2048
+        }
+      },
+      "duration": 500
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "snapshot_001",
+      "name": "断点首次触发状态",
+      "timestamp": "2024-12-08T14:35:22.345Z",
+      "description": "test_function第一次被调用时的完整状态",
+      "breakpoint_states": [
+        {
+          "file": "simple_test.c",
+          "line": 30,
+          "function": "test_function",
+          "enabled": true,
+          "id": "bp_001_abc1",
+          "created_time": "2024-12-08T14:31:15.000Z",
+          "last_triggered": "2024-12-08T14:35:22.345Z",
+          "trigger_count": 1,
+          "code_context": {
+            "line_content": "    counter = local_var + param;",
+            "before_lines": ["    int local_var = 10;", "    int counter = 0;"],
+            "after_lines": ["    for (int i = 0; i < 10; i++) {"],
+            "indent_level": 4,
+            "function_scope": "test_function"
+          },
+          "condition": "",
+          "hit_condition": "",
+          "hit_count": 0,
+          "watched_variables": ["local_var", "counter", "param"],
+          "action": "break",
+          "log_message": "",
+          "debug_info": {
+            "has_debug_symbols": true,
+            "dwarf_offset": 4660,
+            "address": 0,
+            "assembly": ["mov %ebx, %eax", "add %ecx, %eax"]
+          },
+          "status": "active",
+          "last_error": ""
+        }
+      ],
+      "variable_states": [
+        {
+          "name": "local_var",
+          "type": "int",
+          "value": 10,
+          "raw_value": "0x0000000a",
+          "size": 4,
+          "address": 0,
+          "is_pointer": false
+        }
+      ],
+      "execution_state": {
+        "current_function": "test_function",
+        "current_file": "simple_test.c",
+        "current_line": 30,
+        "thread_id": 1234,
+        "cpu_context": {
+          "instruction_pointer": 0,
+          "stack_pointer": 0,
+          "frame_pointer": 0,
+          "flags": 514
+        }
+      },
+      "memory_dump": [
+        {
+          "start_address": 0,
+          "size": 80,
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+          "type": "stack",
+          "description": "函数局部变量内存区域"
+        }
+      ],
+      "register_dump": {
+        "rax": 0,
+        "rbx": 10,
+        "rcx": 42
+      },
+      "call_stack_dump": [
+        {
+          "level": 0,
+          "function": "test_function",
+          "file": "simple_test.c",
+          "line": 30,
+          "address": 0,
+          "arguments": [
+            {
+              "name": "param",
+              "type": "int",
+              "value": 42,
+              "raw_value": "0x0000002a",
+              "size": 4,
+              "address": 0,
+              "is_pointer": false
+            }
+          ],
+          "local_variables": []
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "total_breakpoints": 1,
+    "triggered_breakpoints": 1,
+    "total_debug_events": 3,
+    "total_operations": 15,
+    "average_response_time": 125.5,
+    "peak_memory_usage": 8192,
+    "total_execution_time": 905665
+  },
+  "configuration": {
+    "max_breakpoints": 100,
+    "auto_save_interval": 30,
+    "log_level": "INFO",
+    "enable_profiling": true,
+    "memory_dump_size": 4096,
+    "max_event_history": 1000,
+    "replay_buffer_size": 500
+  },
+  "metadata": {
+    "version": "1.0",
+    "created_by": "kernel_driver_debug_tui v1.0.0",
+    "tags": ["kernel", "debugging", "systemtap", "bpf"],
+    "notes": "内核模块test_function的调试会话，包含变量监控和断点触发记录",
+    "export_time": "2024-12-08T14:45:35.123456Z",
+    "checksum": "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+  }
+} 

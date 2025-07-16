@@ -77,6 +77,8 @@ type DebuggerContext struct {
 	SelectEndY     int
 	// 项目管理
 	Project       *ProjectInfo
+	// SystemTap配置
+	KernelPath    string  // 自定义内核源码路径
 	// 动态布局支持
 	Layout        *DynamicLayout
 	// 命令窗口状态管理 - 类似终端的历史记录
@@ -1005,8 +1007,6 @@ func parseFunctionName(filePath string, targetLine int) string {
 	}
 	
 	// 从目标行向上查找函数定义
-	var currentFunction string
-	
 	for i := targetLine - 1; i >= 0; i-- {
 		line := strings.TrimSpace(lines[i])
 		
@@ -1015,20 +1015,20 @@ func parseFunctionName(filePath string, targetLine int) string {
 			continue
 		}
 		
-		// 查找函数定义模式
-		// 匹配：返回类型 函数名(参数) 或 函数名(参数)
-		if funcName := extractFunctionName(line); funcName != "" {
-			currentFunction = funcName
-			// 继续向上查找，确保找到最近的函数定义
-		}
-		
 		// 如果遇到 } 说明退出了当前函数作用域
 		if strings.Contains(line, "}") && !strings.Contains(line, "{") {
 			break
 		}
+		
+		// 查找函数定义模式
+		// 匹配：返回类型 函数名(参数) 或 函数名(参数)
+		if funcName := extractFunctionName(line); funcName != "" {
+			// 找到函数定义，立即返回（这是离目标行最近的包含函数）
+			return funcName
+		}
 	}
 	
-	return currentFunction
+	return ""
 }
 
 // 从一行代码中提取函数名
@@ -1065,7 +1065,19 @@ func matchFunctionPattern(line, pattern string) (bool, string) {
 	
 	// 模式1: 标准函数定义 "type function_name("
 	if strings.Contains(line, "(") && !strings.Contains(line, "if") && 
-	   !strings.Contains(line, "while") && !strings.Contains(line, "for") {
+	   !strings.Contains(line, "while") && !strings.Contains(line, "for") &&
+	   !strings.Contains(line, "switch") {
+		
+		// 排除明显的宏调用（以分号结尾的通常是宏调用或函数调用，不是函数定义）
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasSuffix(trimmedLine, ";") {
+			return false, ""
+		}
+		
+		// 排除包含赋值操作的行
+		if strings.Contains(line, "=") && !strings.Contains(line, "==") {
+			return false, ""
+		}
 		
 		// 查找 ( 的位置
 		parenIdx := strings.Index(line, "(")
@@ -1087,7 +1099,10 @@ func matchFunctionPattern(line, pattern string) (bool, string) {
 		// 移除可能的指针符号
 		funcName = strings.TrimLeft(funcName, "*")
 		
-		return true, funcName
+		// 检查是否看起来像函数定义（通常函数定义包含返回类型）
+		if len(parts) >= 2 || strings.Contains(line, "{") {
+			return true, funcName
+		}
 	}
 	
 	return false, ""
@@ -1124,6 +1139,26 @@ func isValidFunctionName(name string) bool {
 		"signed":   true,
 		"float":    true,
 		"double":   true,
+		// 内核常用宏，这些不是函数
+		"module_param":       true,
+		"MODULE_PARM_DESC":   true,
+		"MODULE_LICENSE":     true,
+		"MODULE_AUTHOR":      true,
+		"MODULE_DESCRIPTION": true,
+		"MODULE_VERSION":     true,
+		"module_init":        true,
+		"module_exit":        true,
+		"EXPORT_SYMBOL":      true,
+		"EXPORT_SYMBOL_GPL":  true,
+		"printk":            true,  // printk通常是宏
+		"pr_info":           true,
+		"pr_warn":           true,
+		"pr_err":            true,
+		"pr_debug":          true,
+		"KERN_INFO":         true,
+		"KERN_WARNING":      true,
+		"KERN_ERR":          true,
+		"KERN_DEBUG":        true,
 	}
 	
 	// 检查长度
@@ -3730,6 +3765,13 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 			"  compile <arch> - Compile for specific architecture (x86/arm64/riscv64/etc)",
 			"  generate       - Basic function monitoring only (legacy)",
 			"",
+			"🔧 SystemTap Integration:",
+			"  systemtap      - 🚀 Generate SystemTap script with JSON output",
+			"  stp            - Same as above (short form)",
+			"  stp <output>   - Generate with custom JSON output file",
+					"  stap-status    - Check SystemTap script status",
+		"  kernel-path    - 🔧 Set custom kernel source path for debugging",
+		"",
 			"⌨️ Interface:",
 			"  help, h        - Show this help",
 			"  clear          - Clear command output",
@@ -4015,6 +4057,18 @@ func handleCommand(g *gocui.Gui, v *gocui.View) error {
 				}...)
 			}
 		}
+		
+	case "systemtap", "stp":
+		// SystemTap脚本生成命令
+		output = generateSystemTapCommand(globalCtx, args)
+		
+	case "stap-status":
+		// SystemTap状态检查命令
+		output = systemTapStatusCommand(globalCtx)
+		
+	case "kernel-path":
+		// 设置内核源码路径命令
+		output = setKernelPathCommand(globalCtx, args)
 		
 	case "compile":
 		if globalCtx.Project == nil {

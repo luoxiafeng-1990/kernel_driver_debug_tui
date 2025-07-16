@@ -1,0 +1,1055 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+0	debug_session_example.json	/^              {$/;"	o	language:JSON	array:project.source_files.0.functions.0.local_variables
+0	debug_session_example.json	/^              {$/;"	o	language:JSON	array:project.source_files.0.functions.0.parameters
+0	debug_session_example.json	/^            "after_lines": ["    for (int i = 0; i < 10; i++) {"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.code_context.after_lines
+0	debug_session_example.json	/^            "assembly": ["mov %ebx, %eax", "add %ecx, %eax"]$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.debug_info.assembly
+0	debug_session_example.json	/^            "before_lines": ["    int local_var = 10;", "    int counter = 0;"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.code_context.before_lines
+0	debug_session_example.json	/^            "parameters": ["test_function called with param=%d", 42],$/;"	s	language:JSON	array:debug_events.0.performance_data.system_calls.0.parameters
+0	debug_session_example.json	/^            {$/;"	o	language:JSON	array:debug_events.0.call_stack.0.arguments
+0	debug_session_example.json	/^            {$/;"	o	language:JSON	array:debug_events.0.call_stack.0.local_variables
+0	debug_session_example.json	/^            {$/;"	o	language:JSON	array:snapshots.0.call_stack_dump.0.arguments
+0	debug_session_example.json	/^          "    for (int i = 0; i < 10; i++) {",$/;"	s	language:JSON	array:breakpoints.0.code_context.after_lines
+0	debug_session_example.json	/^          "mov    %ebx, %eax",$/;"	s	language:JSON	array:breakpoints.0.debug_info.assembly
+0	debug_session_example.json	/^          "void test_function(int param) {",$/;"	s	language:JSON	array:breakpoints.0.code_context.before_lines
+0	debug_session_example.json	/^          "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.watched_variables
+0	debug_session_example.json	/^          {$/;"	o	language:JSON	array:debug_events.0.performance_data.system_calls
+0	debug_session_example.json	/^          {$/;"	o	language:JSON	array:project.source_files.0.functions
+0	debug_session_example.json	/^        "command_line": ["insmod", "simple_test.ko"],$/;"	s	language:JSON	array:debug_events.0.process_info.command_line
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:debug_events.0.call_stack
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:debug_events.0.memory_snapshots
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:debug_events.0.variable_snapshots
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:snapshots.0.breakpoint_states
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:snapshots.0.call_stack_dump
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:snapshots.0.memory_dump
+0	debug_session_example.json	/^        {$/;"	o	language:JSON	array:snapshots.0.variable_states
+0	debug_session_example.json	/^      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],$/;"	s	language:JSON	array:project.build_info.compile_flags
+0	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+0	debug_session_example.json	/^      "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:breakpoints.0.watched_variables
+0	debug_session_example.json	/^      {$/;"	o	language:JSON	array:project.source_files
+0	debug_session_example.json	/^    "dependencies": ["linux\/module.h", "linux\/kernel.h", "linux\/init.h"]$/;"	s	language:JSON	array:project.dependencies
+0	debug_session_example.json	/^    "tags": ["kernel", "debugging", "systemtap", "bpf"],$/;"	s	language:JSON	array:metadata.tags
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:breakpoint_history
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:breakpoints
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:debug_events
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:operations
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:snapshots
+0	debug_session_example.json	/^    {$/;"	o	language:JSON	array:variable_history
+1	debug_session_example.json	/^              {$/;"	o	language:JSON	array:project.source_files.0.functions.0.local_variables
+1	debug_session_example.json	/^            "assembly": ["mov %ebx, %eax", "add %ecx, %eax"]$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.debug_info.assembly
+1	debug_session_example.json	/^            "before_lines": ["    int local_var = 10;", "    int counter = 0;"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.code_context.before_lines
+1	debug_session_example.json	/^            "parameters": ["test_function called with param=%d", 42],$/;"	n	language:JSON	array:debug_events.0.performance_data.system_calls.0.parameters
+1	debug_session_example.json	/^          "        temp[i] = counter * i;",$/;"	s	language:JSON	array:breakpoints.0.code_context.after_lines
+1	debug_session_example.json	/^          "    int local_var = 10;",$/;"	s	language:JSON	array:breakpoints.0.code_context.before_lines
+1	debug_session_example.json	/^          "add    %ecx, %eax",$/;"	s	language:JSON	array:breakpoints.0.debug_info.assembly
+1	debug_session_example.json	/^          "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.watched_variables
+1	debug_session_example.json	/^        "command_line": ["insmod", "simple_test.ko"],$/;"	s	language:JSON	array:debug_events.0.process_info.command_line
+1	debug_session_example.json	/^        {$/;"	o	language:JSON	array:debug_events.0.variable_snapshots
+1	debug_session_example.json	/^      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],$/;"	s	language:JSON	array:project.build_info.compile_flags
+1	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+1	debug_session_example.json	/^      "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:breakpoints.0.watched_variables
+1	debug_session_example.json	/^    "dependencies": ["linux\/module.h", "linux\/kernel.h", "linux\/init.h"]$/;"	s	language:JSON	array:project.dependencies
+1	debug_session_example.json	/^    "tags": ["kernel", "debugging", "systemtap", "bpf"],$/;"	s	language:JSON	array:metadata.tags
+1	debug_session_example.json	/^    {$/;"	o	language:JSON	array:breakpoint_history
+1	debug_session_example.json	/^    {$/;"	o	language:JSON	array:operations
+1	debug_session_example.json	/^    {$/;"	o	language:JSON	array:variable_history
+1. 弹出窗口系统	README.md	/^### 1. 弹出窗口系统$/;"	S	language:Markdown
+1. 断点到探针映射	README.md	/^### 1. 断点到探针映射$/;"	S	language:Markdown
+1. 环境准备	README.md	/^### 1. 环境准备$/;"	S	language:Markdown
+2	debug_session_example.json	/^          "    int counter = 0;"$/;"	s	language:JSON	array:breakpoints.0.code_context.before_lines
+2	debug_session_example.json	/^          "    }"$/;"	s	language:JSON	array:breakpoints.0.code_context.after_lines
+2	debug_session_example.json	/^          "mov    %eax, -0x4(%rbp)"$/;"	s	language:JSON	array:breakpoints.0.debug_info.assembly
+2	debug_session_example.json	/^          "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:snapshots.0.breakpoint_states.0.watched_variables
+2	debug_session_example.json	/^        {$/;"	o	language:JSON	array:debug_events.0.variable_snapshots
+2	debug_session_example.json	/^      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],$/;"	s	language:JSON	array:project.build_info.compile_flags
+2	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+2	debug_session_example.json	/^      "watched_variables": ["local_var", "counter", "param"],$/;"	s	language:JSON	array:breakpoints.0.watched_variables
+2	debug_session_example.json	/^    "dependencies": ["linux\/module.h", "linux\/kernel.h", "linux\/init.h"]$/;"	s	language:JSON	array:project.dependencies
+2	debug_session_example.json	/^    "tags": ["kernel", "debugging", "systemtap", "bpf"],$/;"	s	language:JSON	array:metadata.tags
+2. BPF 程序结构	README.md	/^### 2. BPF 程序结构$/;"	S	language:Markdown
+2. 启动调试器	README.md	/^### 2. 启动调试器$/;"	S	language:Markdown
+2. 文本选择和复制	README.md	/^### 2. 文本选择和复制$/;"	S	language:Markdown
+3	debug_session_example.json	/^      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],$/;"	s	language:JSON	array:project.build_info.compile_flags
+3	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+3	debug_session_example.json	/^    "tags": ["kernel", "debugging", "systemtap", "bpf"],$/;"	s	language:JSON	array:metadata.tags
+3. 搜索系统	README.md	/^### 3. 搜索系统$/;"	S	language:Markdown
+3. 调试工作流程	README.md	/^### 3. 调试工作流程$/;"	S	language:Markdown
+3. 跨架构支持	README.md	/^### 3. 跨架构支持$/;"	S	language:Markdown
+4	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+4. 响应式布局	README.md	/^### 4. 响应式布局$/;"	S	language:Markdown
+5	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+6	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	s	language:JSON	array:environment.cpu_info.features
+Action	debug_session_types.go	/^	Action             string            `json:"action"`             \/\/ "break", "log", "trace"$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+Address	debug_session_types.go	/^	Address            uint64            `json:"address"`            \/\/ 内存地址$/;"	m	language:Go	struct:main.BreakpointDebugInfo	typeref:typename:uint64
+Address	debug_session_types.go	/^	Address            uint64            `json:"address"`            \/\/ 内存地址$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:uint64
+Address	debug_session_types.go	/^	Address            uint64            `json:"address"`            \/\/ 地址$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:uint64
+AfterLines	debug_session_types.go	/^	AfterLines         []string          `json:"after_lines"`        \/\/ 后几行代码$/;"	m	language:Go	struct:main.CodeContext	typeref:typename:[]string
+ArchDisplayNames	main.go	/^var ArchDisplayNames = map[string]string{$/;"	v	language:Go	package:main
+Architecture	debug_session_types.go	/^	Architecture       string            `json:"architecture"`       \/\/ 目标架构$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:string
+Architecture	debug_session_types.go	/^	Architecture       string            `json:"architecture"`       \/\/ 系统架构$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+Arguments	debug_session_types.go	/^	Arguments          []VariableSnapshot `json:"arguments"`         \/\/ 函数参数$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:[]VariableSnapshot
+ArrayElements	debug_session_types.go	/^	ArrayElements      []VariableSnapshot `json:"array_elements,omitempty"` \/\/ 数组元素$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:[]VariableSnapshot
+Assembly	debug_session_types.go	/^	Assembly           []string          `json:"assembly"`           \/\/ 汇编代码$/;"	m	language:Go	struct:main.BreakpointDebugInfo	typeref:typename:[]string
+AutoSaveInterval	debug_session_types.go	/^	AutoSaveInterval   int               `json:"auto_save_interval"`  \/\/ 自动保存间隔（秒/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:int
+Available	debug_session_types.go	/^	Available          int64             `json:"available"`          \/\/ 可用内存（字节）$/;"	m	language:Go	struct:main.MemoryInformation	typeref:typename:int64
+AverageResponseTime	debug_session_types.go	/^	AverageResponseTime float64          `json:"average_response_time"` \/\/ 平均响应时间$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:float64
+BPF 工具	README.md	/^# BPF 工具$/;"	c	language:Markdown
+BeforeLines	debug_session_types.go	/^	BeforeLines        []string          `json:"before_lines"`       \/\/ 前几行代码$/;"	m	language:Go	struct:main.CodeContext	typeref:typename:[]string
+BpfLoaded	main.go	/^	BpfLoaded     bool$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+Breakpoint	main.go	/^type Breakpoint struct {$/;"	s	language:Go	package:main
+BreakpointDebugInfo	debug_session_types.go	/^type BreakpointDebugInfo struct {$/;"	s	language:Go	package:main
+BreakpointEvent	debug_session_types.go	/^type BreakpointEvent struct {$/;"	s	language:Go	package:main
+BreakpointHistory	debug_session_types.go	/^	BreakpointHistory  []BreakpointEvent    `json:"breakpoint_history"` \/\/ 断点操作历史$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]BreakpointEvent
+BreakpointID	debug_session_types.go	/^	BreakpointID       string            `json:"breakpoint_id"`      \/\/ 关联断点ID$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:string
+BreakpointID	debug_session_types.go	/^	BreakpointID       string            `json:"breakpoint_id"`      \/\/ 断点ID$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:string
+BreakpointID	debug_session_types.go	/^	BreakpointID       string            `json:"breakpoint_id"`      \/\/ 断点ID$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:string
+BreakpointStates	debug_session_types.go	/^	BreakpointStates   []ExtendedBreakpoint `json:"breakpoint_states"` \/\/ 断点状态$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:[]ExtendedBreakpoint
+Breakpoints	debug_session_types.go	/^	Breakpoints        []ExtendedBreakpoint `json:"breakpoints"`      \/\/ 增强版断点列表$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]ExtendedBreakpoint
+Breakpoints	main.go	/^	Breakpoints []Breakpoint$/;"	m	language:Go	struct:main.ProjectInfo	typeref:typename:[]Breakpoint
+BuildInfo	debug_session_types.go	/^	BuildInfo          BuildInformation  `json:"build_info"`         \/\/ 构建信息$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:BuildInformation
+BuildInformation	debug_session_types.go	/^type BuildInformation struct {$/;"	s	language:Go	package:main
+BuildTime	debug_session_types.go	/^	BuildTime          time.Time         `json:"build_time"`         \/\/ 构建时间$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:time.Time
+CPUContext	debug_session_types.go	/^	CPUContext         CPUContext        `json:"cpu_context"`        \/\/ CPU上下文$/;"	m	language:Go	struct:main.ExecutionContext	typeref:typename:CPUContext
+CPUContext	debug_session_types.go	/^type CPUContext struct {$/;"	s	language:Go	package:main
+CPUInfo	debug_session_types.go	/^	CPUInfo            CPUInformation    `json:"cpu_info"`           \/\/ CPU信息$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:CPUInformation
+CPUInformation	debug_session_types.go	/^type CPUInformation struct {$/;"	s	language:Go	package:main
+CPUUsage	debug_session_types.go	/^	CPUUsage           float64           `json:"cpu_usage"`          \/\/ CPU使用率$/;"	m	language:Go	struct:main.PerformanceInfo	typeref:typename:float64
+CallStack	debug_session_types.go	/^	CallStack          []StackFrame      `json:"call_stack"`         \/\/ 调用栈$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:[]StackFrame
+CallStackDump	debug_session_types.go	/^	CallStackDump      []StackFrame      `json:"call_stack_dump"`    \/\/ 调用栈转储$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:[]StackFrame
+ChangeType	debug_session_types.go	/^	ChangeType         string            `json:"change_type"`        \/\/ 变化类型 "created", "/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:string
+Checksum	debug_session_types.go	/^	Checksum           string            `json:"checksum"`            \/\/ 数据校验和$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:string
+Checksum	debug_session_types.go	/^	Checksum           string            `json:"checksum"`           \/\/ 文件校验和$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:string
+Children	main.go	/^	Children []*FileNode$/;"	m	language:Go	struct:main.FileNode	typeref:typename:[]*FileNode
+CodeContext	debug_session_types.go	/^	CodeContext        CodeContext       `json:"code_context"`       \/\/ 代码上下文$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:CodeContext
+CodeContext	debug_session_types.go	/^type CodeContext struct {$/;"	s	language:Go	package:main
+Command	debug_session_types.go	/^	Command            string            `json:"command"`            \/\/ 命令名$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:string
+CommandDirty	main.go	/^	CommandDirty   bool      \/\/ 标记命令窗口是否需要重绘$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+CommandHeight	main.go	/^	CommandHeight     int  \/\/ 命令窗口高度$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+CommandHistory	main.go	/^	CommandHistory []string  \/\/ 保存所有命令历史（包括命令和输出）$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:[]string
+CommandLine	debug_session_types.go	/^	CommandLine        []string          `json:"command_line"`       \/\/ 完整命令行$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:[]string
+CompileFlags	debug_session_types.go	/^	CompileFlags       []string          `json:"compile_flags"`      \/\/ 编译选项$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:[]string
+CompilerVersion	debug_session_types.go	/^	CompilerVersion    string            `json:"compiler_version"`   \/\/ 编译器版本$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:string
+Condition	debug_session_types.go	/^	Condition          string            `json:"condition"`          \/\/ 断点条件表达式$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+Configuration	debug_session_types.go	/^	Configuration      DebugConfiguration   `json:"configuration"`    \/\/ 调试配置$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:DebugConfiguration
+Content	main.go	/^	Content    []string \/\/ 窗口内容（按行存储）$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:[]string
+Context	debug_session_types.go	/^	Context            VariableContext   `json:"context"`            \/\/ 变量上下文$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:VariableContext
+Cores	debug_session_types.go	/^	Cores              int               `json:"cores"`              \/\/ 核心数$/;"	m	language:Go	struct:main.CPUInformation	typeref:typename:int
+CreatedBy	debug_session_types.go	/^	CreatedBy          string            `json:"created_by"`          \/\/ 创建者$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:string
+CreatedTime	debug_session_types.go	/^	CreatedTime        time.Time         `json:"created_time"`       \/\/ 创建时间$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:time.Time
+CurrentAddr	main.go	/^	CurrentAddr   uint64$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:uint64
+CurrentFile	debug_session_types.go	/^	CurrentFile        string            `json:"current_file"`       \/\/ 当前文件$/;"	m	language:Go	struct:main.ExecutionContext	typeref:typename:string
+CurrentFile	main.go	/^	CurrentFile string$/;"	m	language:Go	struct:main.ProjectInfo	typeref:typename:string
+CurrentFocus	main.go	/^	CurrentFocus  int$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+CurrentFunc	main.go	/^	CurrentFunc   string$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+CurrentFunction	debug_session_types.go	/^	CurrentFunction    string            `json:"current_function"`   \/\/ 当前函数$/;"	m	language:Go	struct:main.ExecutionContext	typeref:typename:string
+CurrentInput	main.go	/^	CurrentInput   string    \/\/ 当前正在输入的命令$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+CurrentLine	debug_session_types.go	/^	CurrentLine        int               `json:"current_line"`       \/\/ 当前行号$/;"	m	language:Go	struct:main.ExecutionContext	typeref:typename:int
+CurrentMatch	main.go	/^	CurrentMatch   int           \/\/ 当前匹配项索引$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+DEBUG_BREAKPOINT	main.go	/^	DEBUG_BREAKPOINT$/;"	c	language:Go	package:main
+DEBUG_RUNNING	main.go	/^	DEBUG_RUNNING$/;"	c	language:Go	package:main
+DEBUG_STEPPING	main.go	/^	DEBUG_STEPPING$/;"	c	language:Go	package:main
+DEBUG_STOPPED	main.go	/^	DEBUG_STOPPED = iota$/;"	c	language:Go	package:main
+DWARFOffset	debug_session_types.go	/^	DWARFOffset        uint64            `json:"dwarf_offset"`       \/\/ DWARF偏移$/;"	m	language:Go	struct:main.BreakpointDebugInfo	typeref:typename:uint64
+Data	debug_session_types.go	/^	Data               []byte            `json:"data"`               \/\/ 内存数据$/;"	m	language:Go	struct:main.MemorySnapshot	typeref:typename:[]byte
+Data	debug_session_types.go	/^	Data               map[string]interface{} `json:"data"`          \/\/ 结果数据$/;"	m	language:Go	struct:main.OperationResult	typeref:typename:map[string]interface{}
+Data	debug_session_types.go	/^	Data               map[string]interface{} `json:"data"`          \/\/ 附加数据$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:map[string]interface{}
+DebugConfiguration	debug_session_types.go	/^type DebugConfiguration struct {$/;"	s	language:Go	package:main
+DebugEventRecord	debug_session_types.go	/^type DebugEventRecord struct {$/;"	s	language:Go	package:main
+DebugEvents	debug_session_types.go	/^	DebugEvents        []DebugEventRecord   `json:"debug_events"`     \/\/ 调试事件记录$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]DebugEventRecord
+DebugInfo	debug_session_types.go	/^	DebugInfo          BreakpointDebugInfo `json:"debug_info"`       \/\/ 调试符号信息$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:BreakpointDebugInfo
+DebugOperation	debug_session_types.go	/^type DebugOperation struct {$/;"	s	language:Go	package:main
+DebugSession	debug_session_types.go	/^type DebugSession struct {$/;"	s	language:Go	package:main
+DebugSessionManager	debug_session_integration.go	/^type DebugSessionManager struct {$/;"	s	language:Go	package:main
+DebugSymbols	debug_session_types.go	/^	DebugSymbols       bool              `json:"debug_symbols"`      \/\/ 是否包含调试符号$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:bool
+DebuggerContext	main.go	/^type DebuggerContext struct {$/;"	s	language:Go	package:main
+DebuggerState	main.go	/^type DebuggerState int$/;"	t	language:Go	package:main
+Dependencies	debug_session_types.go	/^	Dependencies       []string          `json:"dependencies"`       \/\/ 依赖项列表$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:[]string
+Description	debug_session_types.go	/^	Description        string            `json:"description"`        \/\/ 事件描述$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:string
+Description	debug_session_types.go	/^	Description        string            `json:"description"`        \/\/ 快照描述$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:string
+Description	debug_session_types.go	/^	Description        string            `json:"description"`        \/\/ 描述$/;"	m	language:Go	struct:main.MemorySnapshot	typeref:typename:string
+DragBoundary	main.go	/^	DragBoundary      string \/\/ "left", "right", "bottom", "right1", "right2"$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:string
+DragOriginalValue	main.go	/^	DragOriginalValue int$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+DragStartX	main.go	/^	DragStartX        int$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+DragStartX	main.go	/^	DragStartX int      \/\/ 拖拽起始X坐标$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+DragStartY	main.go	/^	DragStartY        int$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+DragStartY	main.go	/^	DragStartY int      \/\/ 拖拽起始Y坐标$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+Dragging	main.go	/^	Dragging   bool     \/\/ 是否正在拖拽$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:bool
+DraggingPopup	main.go	/^	DraggingPopup  *PopupWindow  \/\/ 当前正在拖拽的弹出窗口$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:*PopupWindow
+Duration	debug_session_types.go	/^	Duration           int64             `json:"duration"`            \/\/ 会话持续时间（毫/;"	m	language:Go	struct:main.DebugSession	typeref:typename:int64
+Duration	debug_session_types.go	/^	Duration           int64             `json:"duration"`           \/\/ 执行时长（毫秒）$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:int64
+Duration	debug_session_types.go	/^	Duration           int64             `json:"duration"`           \/\/ 执行时长（纳秒）$/;"	m	language:Go	struct:main.SystemCall	typeref:typename:int64
+DynamicLayout	main.go	/^type DynamicLayout struct {$/;"	s	language:Go	package:main
+EnableProfiling	debug_session_types.go	/^	EnableProfiling    bool              `json:"enable_profiling"`    \/\/ 是否启用性能分析$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:bool
+Enabled	debug_session_types.go	/^	Enabled            bool              `json:"enabled"`            \/\/ 是否启用$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:bool
+Enabled	main.go	/^	Enabled  bool$/;"	m	language:Go	struct:main.Breakpoint	typeref:typename:bool
+EndColumn	main.go	/^	EndColumn   int \/\/ 匹配结束列（从0开始）$/;"	m	language:Go	struct:main.SearchResult	typeref:typename:int
+EndLine	debug_session_types.go	/^	EndLine            int               `json:"end_line"`           \/\/ 结束行号$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:int
+EndSession	debug_session_integration.go	/^func (dsm *DebugSessionManager) EndSession() error {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:error	signature:()
+EndTime	debug_session_types.go	/^	EndTime            *time.Time        `json:"end_time,omitempty"`  \/\/ 会话结束时间（可/;"	m	language:Go	struct:main.DebugSession	typeref:typename:*time.Time
+Environment	debug_session_types.go	/^	Environment        SystemEnvironment `json:"environment"`         \/\/ 系统环境$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:SystemEnvironment
+Environment	debug_session_types.go	/^	Environment        map[string]string `json:"environment"`        \/\/ 环境变量$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:map[string]string
+EnvironmentVars	debug_session_types.go	/^	EnvironmentVars    map[string]string `json:"environment_vars"`   \/\/ 环境变量$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:map[string]string
+Error	debug_session_types.go	/^	Error              string            `json:"error,omitempty"`    \/\/ 错误信息$/;"	m	language:Go	struct:main.OperationResult	typeref:typename:string
+EventType	debug_session_types.go	/^	EventType          string            `json:"event_type"`         \/\/ "created", "enabled", "di/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:string
+ExecutionContext	debug_session_types.go	/^	ExecutionContext   ExecutionContext  `json:"execution_context"`  \/\/ 执行上下文$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:ExecutionContext
+ExecutionContext	debug_session_types.go	/^type ExecutionContext struct {$/;"	s	language:Go	package:main
+ExecutionState	debug_session_types.go	/^	ExecutionState     ExecutionContext     `json:"execution_state"`   \/\/ 执行状态$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:ExecutionContext
+ExecutionTime	debug_session_types.go	/^	ExecutionTime      int64             `json:"execution_time"`     \/\/ 执行时间（纳秒）$/;"	m	language:Go	struct:main.PerformanceInfo	typeref:typename:int64
+Expanded	main.go	/^	Expanded bool$/;"	m	language:Go	struct:main.FileNode	typeref:typename:bool
+ExportTime	debug_session_types.go	/^	ExportTime         time.Time         `json:"export_time"`         \/\/ 导出时间$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:time.Time
+ExportToJSON	debug_session_types.go	/^func (session *DebugSession) ExportToJSON() ([]byte, error) {$/;"	f	language:Go	unknown:main.DebugSession	typeref:typename:([]byte, error)	signature:()
+ExtendedBreakpoint	debug_session_types.go	/^type ExtendedBreakpoint struct {$/;"	s	language:Go	package:main
+Features	debug_session_types.go	/^	Features           []string          `json:"features"`           \/\/ CPU特性$/;"	m	language:Go	struct:main.CPUInformation	typeref:typename:[]string
+File	debug_session_types.go	/^	File               string            `json:"file"`               \/\/ 所在文件$/;"	m	language:Go	struct:main.VariableContext	typeref:typename:string
+File	debug_session_types.go	/^	File               string            `json:"file"`               \/\/ 文件路径$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+File	debug_session_types.go	/^	File               string            `json:"file"`               \/\/ 文件路径$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:string
+File	main.go	/^	File     string$/;"	m	language:Go	struct:main.Breakpoint	typeref:typename:string
+FileNode	main.go	/^type FileNode struct {$/;"	s	language:Go	package:main
+FileTree	main.go	/^	FileTree    *FileNode$/;"	m	language:Go	struct:main.ProjectInfo	typeref:typename:*FileNode
+Flags	debug_session_types.go	/^	Flags              uint64            `json:"flags"`               \/\/ 标志寄存器$/;"	m	language:Go	struct:main.CPUContext	typeref:typename:uint64
+FramePointer	debug_session_types.go	/^	FramePointer       uint64            `json:"frame_pointer"`       \/\/ 帧指针$/;"	m	language:Go	struct:main.CPUContext	typeref:typename:uint64
+Frequency	debug_session_types.go	/^	Frequency          string            `json:"frequency"`          \/\/ 频率$/;"	m	language:Go	struct:main.CPUInformation	typeref:typename:string
+FullscreenView	main.go	/^	FullscreenView string        \/\/ 当前全屏的窗口名称$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+Function	debug_session_types.go	/^	Function           string            `json:"function"`           \/\/ 函数名$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+Function	debug_session_types.go	/^	Function           string            `json:"function"`           \/\/ 函数名$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:string
+Function	debug_session_types.go	/^	Function           string            `json:"function"`           \/\/ 所在函数$/;"	m	language:Go	struct:main.VariableContext	typeref:typename:string
+Function	main.go	/^	Function string$/;"	m	language:Go	struct:main.Breakpoint	typeref:typename:string
+FunctionCount	debug_session_types.go	/^	FunctionCount      int               `json:"function_count"`     \/\/ 函数数量$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:int
+FunctionInfo	debug_session_types.go	/^type FunctionInfo struct {$/;"	s	language:Go	package:main
+FunctionScope	debug_session_types.go	/^	FunctionScope      string            `json:"function_scope"`     \/\/ 所在函数范围$/;"	m	language:Go	struct:main.CodeContext	typeref:typename:string
+Functions	debug_session_types.go	/^	Functions          []FunctionInfo    `json:"functions"`          \/\/ 函数列表$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:[]FunctionInfo
+Go 开发环境	README.md	/^# Go 开发环境$/;"	c	language:Markdown
+HOME	debug_session_example.json	/^      "HOME": "\/home\/rlk",$/;"	s	language:JSON	object:environment.environment_vars
+HasDebugSymbols	debug_session_types.go	/^	HasDebugSymbols    bool              `json:"has_debug_symbols"`  \/\/ 是否有调试符号$/;"	m	language:Go	struct:main.BreakpointDebugInfo	typeref:typename:bool
+Height	main.go	/^	Height     int      \/\/ 窗口高度$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+HitCondition	debug_session_types.go	/^	HitCondition       string            `json:"hit_condition"`      \/\/ 命中条件 ">=", "==", /;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+HitCount	debug_session_types.go	/^	HitCount           int               `json:"hit_count"`          \/\/ 命中计数器$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:int
+Hostname	debug_session_types.go	/^	Hostname           string            `json:"hostname"`           \/\/ 主机名$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 事件ID$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 事件ID$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 快照ID$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 操作ID$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 断点唯一ID$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+ID	debug_session_types.go	/^	ID                 string            `json:"id"`                 \/\/ 记录ID$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:string
+ID	main.go	/^	ID         string   \/\/ 窗口唯一标识$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:string
+ImportSessionFromJSON	debug_session_types.go	/^func ImportSessionFromJSON(data []byte) (*DebugSession, error) {$/;"	f	language:Go	package:main	typeref:typename:(*DebugSession, error)	signature:(data []byte)
+IndentLevel	debug_session_types.go	/^	IndentLevel        int               `json:"indent_level"`       \/\/ 缩进级别$/;"	m	language:Go	struct:main.CodeContext	typeref:typename:int
+InstructionPointer	debug_session_types.go	/^	InstructionPointer uint64            `json:"instruction_pointer"` \/\/ 指令指针$/;"	m	language:Go	struct:main.CPUContext	typeref:typename:uint64
+IsDir	main.go	/^	IsDir    bool$/;"	m	language:Go	struct:main.FileNode	typeref:typename:bool
+IsDragging	main.go	/^	IsDragging        bool$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:bool
+IsFullscreen	main.go	/^	IsFullscreen   bool          \/\/ 是否处于全屏状态$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+IsPointer	debug_session_types.go	/^	IsPointer          bool              `json:"is_pointer"`         \/\/ 是否为指针$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:bool
+KERNEL_VERSION	debug_session_example.json	/^          "KERNEL_VERSION": "5.15.0-136-generic"$/;"	s	language:JSON	object:debug_events.0.process_info.environment
+KernelVersion	debug_session_types.go	/^	KernelVersion      string            `json:"kernel_version"`     \/\/ 内核版本$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+LastClickLine	main.go	/^	LastClickLine  int       \/\/ 上次点击的行号$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+LastClickTime	main.go	/^	LastClickTime  time.Time \/\/ 上次点击时间$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:time.Time
+LastError	debug_session_types.go	/^	LastError          string            `json:"last_error"`         \/\/ 最后错误信息$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+LastModified	debug_session_types.go	/^	LastModified       time.Time         `json:"last_modified"`      \/\/ 最后修改时间$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:time.Time
+LastTriggered	debug_session_types.go	/^	LastTriggered      *time.Time        `json:"last_triggered,omitempty"` \/\/ 最后触发时间$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:*time.Time
+Layout	main.go	/^	Layout        *DynamicLayout$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:*DynamicLayout
+LeftPanelWidth	main.go	/^	LeftPanelWidth    int  \/\/ 左侧文件浏览器宽度$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+Level	debug_session_types.go	/^	Level              int               `json:"level"`              \/\/ 栈帧级别$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:int
+Line	debug_session_types.go	/^	Line               int               `json:"line"`               \/\/ 所在行号$/;"	m	language:Go	struct:main.VariableContext	typeref:typename:int
+Line	debug_session_types.go	/^	Line               int               `json:"line"`               \/\/ 行号$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:int
+Line	debug_session_types.go	/^	Line               int               `json:"line"`               \/\/ 行号$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:int
+Line	main.go	/^	Line     int$/;"	m	language:Go	struct:main.Breakpoint	typeref:typename:int
+LineContent	debug_session_types.go	/^	LineContent        string            `json:"line_content"`       \/\/ 断点行内容$/;"	m	language:Go	struct:main.CodeContext	typeref:typename:string
+LineCount	debug_session_types.go	/^	LineCount          int               `json:"line_count"`         \/\/ 行数$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:int
+LineNumber	main.go	/^	LineNumber  int \/\/ 行号（从1开始）$/;"	m	language:Go	struct:main.SearchResult	typeref:typename:int
+LoadSession	debug_session_integration.go	/^func (dsm *DebugSessionManager) LoadSession() error {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:error	signature:()
+LocalVariables	debug_session_types.go	/^	LocalVariables     []VariableInfo    `json:"local_variables"`    \/\/ 局部变量$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:[]VariableInfo
+LocalVariables	debug_session_types.go	/^	LocalVariables     []VariableSnapshot `json:"local_variables"`   \/\/ 局部变量$/;"	m	language:Go	struct:main.StackFrame	typeref:typename:[]VariableSnapshot
+Location	debug_session_types.go	/^	Location           VariableLocation  `json:"location"`           \/\/ 变量位置信息$/;"	m	language:Go	struct:main.VariableInfo	typeref:typename:VariableLocation
+LogLevel	debug_session_types.go	/^	LogLevel           string            `json:"log_level"`           \/\/ 日志级别$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:string
+LogMessage	debug_session_types.go	/^	LogMessage         string            `json:"log_message"`        \/\/ 日志消息模板$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+MODULE_NAME	debug_session_example.json	/^          "MODULE_NAME": "simple_test",$/;"	s	language:JSON	object:debug_events.0.process_info.environment
+MaxBreakpoints	debug_session_types.go	/^	MaxBreakpoints     int               `json:"max_breakpoints"`     \/\/ 最大断点数$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:int
+MaxEventHistory	debug_session_types.go	/^	MaxEventHistory    int               `json:"max_event_history"`   \/\/ 最大事件历史数$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:int
+MemoryDump	debug_session_types.go	/^	MemoryDump         []MemorySnapshot  `json:"memory_dump"`        \/\/ 内存转储$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:[]MemorySnapshot
+MemoryDumpSize	debug_session_types.go	/^	MemoryDumpSize     int               `json:"memory_dump_size"`    \/\/ 内存转储大小$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:int
+MemoryInfo	debug_session_types.go	/^	MemoryInfo         MemoryInformation `json:"memory_info"`        \/\/ 内存信息$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:MemoryInformation
+MemoryInformation	debug_session_types.go	/^type MemoryInformation struct {$/;"	s	language:Go	package:main
+MemorySnapshot	debug_session_types.go	/^type MemorySnapshot struct {$/;"	s	language:Go	package:main
+MemorySnapshots	debug_session_types.go	/^	MemorySnapshots    []MemorySnapshot  `json:"memory_snapshots"`   \/\/ 内存快照$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:[]MemorySnapshot
+MemoryUsage	debug_session_types.go	/^	MemoryUsage        int64             `json:"memory_usage"`       \/\/ 内存使用量$/;"	m	language:Go	struct:main.PerformanceInfo	typeref:typename:int64
+Message	debug_session_types.go	/^	Message            string            `json:"message"`            \/\/ 结果消息$/;"	m	language:Go	struct:main.OperationResult	typeref:typename:string
+Metadata	debug_session_types.go	/^	Metadata           SessionMetadata      `json:"metadata"`         \/\/ 额外元数据$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:SessionMetadata
+Model	debug_session_types.go	/^	Model              string            `json:"model"`              \/\/ CPU型号$/;"	m	language:Go	struct:main.CPUInformation	typeref:typename:string
+MouseEnabled	main.go	/^	MouseEnabled  bool$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+MouseSelecting	main.go	/^	MouseSelecting bool$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 函数名$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 参数名$/;"	m	language:Go	struct:main.ParameterInfo	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 变量名$/;"	m	language:Go	struct:main.VariableInfo	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 变量名$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 快照名称$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 系统调用名$/;"	m	language:Go	struct:main.SystemCall	typeref:typename:string
+Name	debug_session_types.go	/^	Name               string            `json:"name"`               \/\/ 项目名称$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:string
+Name	main.go	/^	Name        string$/;"	m	language:Go	struct:main.VariableLocation	typeref:typename:string
+Name	main.go	/^	Name     string$/;"	m	language:Go	struct:main.FileNode	typeref:typename:string
+NewDebugSessionManager	debug_session_integration.go	/^func NewDebugSessionManager(ctx *DebuggerContext) *DebugSessionManager {$/;"	f	language:Go	package:main	typeref:typename:*DebugSessionManager	signature:(ctx *DebuggerContext)
+NewValue	debug_session_types.go	/^	NewValue           interface{}       `json:"new_value"`          \/\/ 新值$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:interface{}
+Notes	debug_session_types.go	/^	Notes              string            `json:"notes"`               \/\/ 备注$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:string
+OldValue	debug_session_types.go	/^	OldValue           interface{}       `json:"old_value"`          \/\/ 旧值$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:interface{}
+OpenFiles	main.go	/^	OpenFiles   map[string][]string \/\/ 文件路径 -> 文件内容行数组$/;"	m	language:Go	struct:main.ProjectInfo	typeref:typename:map[string][]string
+OperatingSystem	debug_session_types.go	/^	OperatingSystem    string            `json:"operating_system"`   \/\/ 操作系统$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+OperationResult	debug_session_types.go	/^type OperationResult struct {$/;"	s	language:Go	package:main
+Operations	debug_session_types.go	/^	Operations         []DebugOperation     `json:"operations"`       \/\/ 操作序列（支持重/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]DebugOperation
+OptimizationLevel	debug_session_types.go	/^	OptimizationLevel  string            `json:"optimization_level"` \/\/ 优化级别$/;"	m	language:Go	struct:main.BuildInformation	typeref:typename:string
+PATH	debug_session_example.json	/^      "PATH": "\/usr\/local\/bin:\/usr\/bin:\/bin",$/;"	s	language:JSON	object:environment.environment_vars
+PID	debug_session_types.go	/^	PID                int               `json:"pid"`                \/\/ 进程ID$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:int
+PPID	debug_session_types.go	/^	PPID               int               `json:"ppid"`               \/\/ 父进程ID$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:int
+ParameterInfo	debug_session_types.go	/^type ParameterInfo struct {$/;"	s	language:Go	package:main
+Parameters	debug_session_types.go	/^	Parameters         []ParameterInfo   `json:"parameters"`         \/\/ 参数列表$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:[]ParameterInfo
+Parameters	debug_session_types.go	/^	Parameters         []interface{}     `json:"parameters"`         \/\/ 参数$/;"	m	language:Go	struct:main.SystemCall	typeref:typename:[]interface{}
+Parameters	debug_session_types.go	/^	Parameters         map[string]interface{} `json:"parameters"`    \/\/ 操作参数$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:map[string]interface{}
+Path	debug_session_types.go	/^	Path               string            `json:"path"`               \/\/ 文件路径$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:string
+Path	main.go	/^	Path     string$/;"	m	language:Go	struct:main.FileNode	typeref:typename:string
+PeakMemoryUsage	debug_session_types.go	/^	PeakMemoryUsage    int64             `json:"peak_memory_usage"`   \/\/ 峰值内存使用$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int64
+PerformanceData	debug_session_types.go	/^	PerformanceData    PerformanceInfo   `json:"performance_data"`   \/\/ 性能数据$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:PerformanceInfo
+PerformanceInfo	debug_session_types.go	/^type PerformanceInfo struct {$/;"	s	language:Go	package:main
+PointerTarget	debug_session_types.go	/^	PointerTarget      *VariableSnapshot `json:"pointer_target,omitempty"` \/\/ 指针目标$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:*VariableSnapshot
+PopupWindow	main.go	/^type PopupWindow struct {$/;"	s	language:Go	package:main
+PopupWindows	main.go	/^	PopupWindows   []*PopupWindow \/\/ 所有弹出窗口列表$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:[]*PopupWindow
+ProcessInfo	debug_session_types.go	/^	ProcessInfo        ProcessInformation `json:"process_info"`      \/\/ 进程信息$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:ProcessInformation
+ProcessInformation	debug_session_types.go	/^type ProcessInformation struct {$/;"	s	language:Go	package:main
+Project	debug_session_types.go	/^	Project            ProjectMetadata   `json:"project"`             \/\/ 项目元数据$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:ProjectMetadata
+Project	main.go	/^	Project       *ProjectInfo$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:*ProjectInfo
+ProjectInfo	main.go	/^type ProjectInfo struct {$/;"	s	language:Go	package:main
+ProjectMetadata	debug_session_types.go	/^type ProjectMetadata struct {$/;"	s	language:Go	package:main
+RISC-V 内核调试器 TUI (debug-gocui)	README.md	/^# RISC-V 内核调试器 TUI (debug-gocui)$/;"	c	language:Markdown
+RawValue	debug_session_types.go	/^	RawValue           string            `json:"raw_value"`          \/\/ 原始值（字符串形式/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:string
+Register	main.go	/^	Register    string \/\/ 寄存器名称 (如 "rax", "rbx")$/;"	m	language:Go	struct:main.VariableLocation	typeref:typename:string
+RegisterDump	debug_session_types.go	/^	RegisterDump       map[string]interface{} `json:"register_dump"` \/\/ 寄存器转储$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:map[string]interface{}
+RegisterState	debug_session_types.go	/^	RegisterState      map[string]interface{} `json:"register_state"` \/\/ 寄存器状态$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:map[string]interface{}
+RelativePath	debug_session_types.go	/^	RelativePath       string            `json:"relative_path"`      \/\/ 相对路径$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:string
+ReplayBufferSize	debug_session_types.go	/^	ReplayBufferSize   int               `json:"replay_buffer_size"`  \/\/ 重放缓冲区大小$/;"	m	language:Go	struct:main.DebugConfiguration	typeref:typename:int
+Result	debug_session_types.go	/^	Result             OperationResult   `json:"result"`             \/\/ 操作结果$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:OperationResult
+ReturnType	debug_session_types.go	/^	ReturnType         string            `json:"return_type"`        \/\/ 返回类型$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:string
+ReturnValue	debug_session_types.go	/^	ReturnValue        interface{}       `json:"return_value"`       \/\/ 返回值$/;"	m	language:Go	struct:main.SystemCall	typeref:typename:interface{}
+RightPanelSplit1	main.go	/^	RightPanelSplit1  int  \/\/ 右侧面板第一个分割点 (寄存器\/变量)$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+RightPanelSplit2	main.go	/^	RightPanelSplit2  int  \/\/ 右侧面板第二个分割点 (变量\/堆栈)$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+RightPanelWidth	main.go	/^	RightPanelWidth   int  \/\/ 右侧面板宽度$/;"	m	language:Go	struct:main.DynamicLayout	typeref:typename:int
+RootPath	debug_session_types.go	/^	RootPath           string            `json:"root_path"`          \/\/ 项目根目录$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:string
+RootPath	main.go	/^	RootPath    string$/;"	m	language:Go	struct:main.ProjectInfo	typeref:typename:string
+Running	main.go	/^	Running       bool$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+SaveSession	debug_session_integration.go	/^func (dsm *DebugSessionManager) SaveSession() error {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:error	signature:()
+SavedLayout	main.go	/^	SavedLayout    *DynamicLayout \/\/ 保存的原始布局$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:*DynamicLayout
+Scope	debug_session_types.go	/^	Scope              string            `json:"scope"`              \/\/ 作用域 "local", "globa/;"	m	language:Go	struct:main.VariableInfo	typeref:typename:string
+Scope	debug_session_types.go	/^	Scope              string            `json:"scope"`              \/\/ 作用域$/;"	m	language:Go	struct:main.VariableContext	typeref:typename:string
+ScrollY	main.go	/^	ScrollY    int      \/\/ 垂直滚动偏移$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+SearchDirty	main.go	/^	SearchDirty    bool          \/\/ 搜索结果是否需要更新$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+SearchInput	main.go	/^	SearchInput    string        \/\/ 搜索输入缓冲区$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+SearchMode	main.go	/^	SearchMode     bool          \/\/ 是否处于搜索模式$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+SearchResult	main.go	/^type SearchResult struct {$/;"	s	language:Go	package:main
+SearchResults	main.go	/^	SearchResults  []SearchResult \/\/ 搜索结果列表$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:[]SearchResult
+SearchTerm	main.go	/^	SearchTerm     string        \/\/ 当前搜索词$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+SelectEndX	main.go	/^	SelectEndX     int$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+SelectEndY	main.go	/^	SelectEndY     int$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+SelectStartX	main.go	/^	SelectStartX   int$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+SelectStartY	main.go	/^	SelectStartY   int$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:int
+SelectionMode	main.go	/^	SelectionMode bool$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:bool
+SelectionText	main.go	/^	SelectionText string$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+SelectionView	main.go	/^	SelectionView string$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:string
+SessionID	debug_session_types.go	/^	SessionID          string            `json:"session_id"`          \/\/ 唯一会话ID$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:string
+SessionMetadata	debug_session_types.go	/^type SessionMetadata struct {$/;"	s	language:Go	package:main
+SessionName	debug_session_types.go	/^	SessionName        string            `json:"session_name"`        \/\/ 会话名称$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:string
+SessionSnapshot	debug_session_types.go	/^type SessionSnapshot struct {$/;"	s	language:Go	package:main
+SessionStatistics	debug_session_types.go	/^type SessionStatistics struct {$/;"	s	language:Go	package:main
+Size	debug_session_types.go	/^	Size               int               `json:"size"`               \/\/ 大小$/;"	m	language:Go	struct:main.MemorySnapshot	typeref:typename:int
+Size	debug_session_types.go	/^	Size               int               `json:"size"`               \/\/ 大小（字节）$/;"	m	language:Go	struct:main.ParameterInfo	typeref:typename:int
+Size	debug_session_types.go	/^	Size               int               `json:"size"`               \/\/ 大小（字节）$/;"	m	language:Go	struct:main.VariableInfo	typeref:typename:int
+Size	debug_session_types.go	/^	Size               int               `json:"size"`               \/\/ 大小（字节）$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:int
+Size	debug_session_types.go	/^	Size               int64             `json:"size"`               \/\/ 文件大小$/;"	m	language:Go	struct:main.SourceFileInfo	typeref:typename:int64
+Size	main.go	/^	Size        int    \/\/ 变量大小$/;"	m	language:Go	struct:main.VariableLocation	typeref:typename:int
+Snapshots	debug_session_types.go	/^	Snapshots          []SessionSnapshot    `json:"snapshots"`        \/\/ 会话快照$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]SessionSnapshot
+SourceFileInfo	debug_session_types.go	/^type SourceFileInfo struct {$/;"	s	language:Go	package:main
+SourceFiles	debug_session_types.go	/^	SourceFiles        []SourceFileInfo  `json:"source_files"`       \/\/ 源文件信息$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:[]SourceFileInfo
+StackFrame	debug_session_types.go	/^type StackFrame struct {$/;"	s	language:Go	package:main
+StackOffset	main.go	/^	StackOffset int    \/\/ 栈偏移量$/;"	m	language:Go	struct:main.VariableLocation	typeref:typename:int
+StackPointer	debug_session_types.go	/^	StackPointer       uint64            `json:"stack_pointer"`       \/\/ 栈指针$/;"	m	language:Go	struct:main.CPUContext	typeref:typename:uint64
+StartAddress	debug_session_types.go	/^	StartAddress       uint64            `json:"start_address"`      \/\/ 起始地址$/;"	m	language:Go	struct:main.MemorySnapshot	typeref:typename:uint64
+StartColumn	main.go	/^	StartColumn int \/\/ 匹配开始列（从0开始）$/;"	m	language:Go	struct:main.SearchResult	typeref:typename:int
+StartLine	debug_session_types.go	/^	StartLine          int               `json:"start_line"`         \/\/ 开始行号$/;"	m	language:Go	struct:main.FunctionInfo	typeref:typename:int
+StartNewSession	debug_session_integration.go	/^func (dsm *DebugSessionManager) StartNewSession(sessionName string) error {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:error	signature:(sessionName string)
+StartTime	debug_session_types.go	/^	StartTime          time.Time         `json:"start_time"`          \/\/ 会话开始时间$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:time.Time
+State	main.go	/^	State         DebuggerState$/;"	m	language:Go	struct:main.DebuggerContext	typeref:typename:DebuggerState
+Statistics	debug_session_types.go	/^	Statistics         SessionStatistics    `json:"statistics"`       \/\/ 会话统计$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:SessionStatistics
+Status	debug_session_types.go	/^	Status             string            `json:"status"`              \/\/ "active", "paused", "end/;"	m	language:Go	struct:main.DebugSession	typeref:typename:string
+Status	debug_session_types.go	/^	Status             string            `json:"status"`             \/\/ "active", "disabled", "in/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:string
+StructMembers	debug_session_types.go	/^	StructMembers      []VariableSnapshot `json:"struct_members,omitempty"` \/\/ 结构体成员$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:[]VariableSnapshot
+Success	debug_session_types.go	/^	Success            bool              `json:"success"`            \/\/ 是否成功$/;"	m	language:Go	struct:main.OperationResult	typeref:typename:bool
+SupportedArchitectures	main.go	/^var SupportedArchitectures = map[string]string{$/;"	v	language:Go	package:main
+SwapTotal	debug_session_types.go	/^	SwapTotal          int64             `json:"swap_total"`         \/\/ 交换内存总量$/;"	m	language:Go	struct:main.MemoryInformation	typeref:typename:int64
+SwapUsed	debug_session_types.go	/^	SwapUsed           int64             `json:"swap_used"`          \/\/ 交换内存使用量$/;"	m	language:Go	struct:main.MemoryInformation	typeref:typename:int64
+SystemCall	debug_session_types.go	/^type SystemCall struct {$/;"	s	language:Go	package:main
+SystemCalls	debug_session_types.go	/^	SystemCalls        []SystemCall      `json:"system_calls"`       \/\/ 系统调用$/;"	m	language:Go	struct:main.PerformanceInfo	typeref:typename:[]SystemCall
+SystemEnvironment	debug_session_types.go	/^type SystemEnvironment struct {$/;"	s	language:Go	package:main
+SystemTime	debug_session_types.go	/^	SystemTime         time.Time         `json:"system_time"`        \/\/ 系统时间$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:time.Time
+TGID	debug_session_types.go	/^	TGID               int               `json:"tgid"`               \/\/ 线程组ID$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:int
+Tags	debug_session_types.go	/^	Tags               []string          `json:"tags"`                \/\/ 标签$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:[]string
+Text	main.go	/^	Text        string \/\/ 匹配的文本$/;"	m	language:Go	struct:main.SearchResult	typeref:typename:string
+ThreadID	debug_session_types.go	/^	ThreadID           int               `json:"thread_id"`          \/\/ 线程ID$/;"	m	language:Go	struct:main.ExecutionContext	typeref:typename:int
+Timestamp	debug_session_types.go	/^	Timestamp          time.Time         `json:"timestamp"`          \/\/ 快照时间$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:time.Time
+Timestamp	debug_session_types.go	/^	Timestamp          time.Time         `json:"timestamp"`          \/\/ 操作时间$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:time.Time
+Timestamp	debug_session_types.go	/^	Timestamp          time.Time         `json:"timestamp"`          \/\/ 时间戳$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:time.Time
+Timestamp	debug_session_types.go	/^	Timestamp          time.Time         `json:"timestamp"`          \/\/ 触发时间$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:time.Time
+Timestamp	debug_session_types.go	/^	Timestamp          time.Time         `json:"timestamp"`          \/\/ 记录时间$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:time.Time
+Title	main.go	/^	Title      string   \/\/ 窗口标题$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:string
+Total	debug_session_types.go	/^	Total              int64             `json:"total"`              \/\/ 总内存（字节）$/;"	m	language:Go	struct:main.MemoryInformation	typeref:typename:int64
+TotalBreakpoints	debug_session_types.go	/^	TotalBreakpoints   int               `json:"total_breakpoints"`   \/\/ 总断点数$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int
+TotalDebugEvents	debug_session_types.go	/^	TotalDebugEvents   int               `json:"total_debug_events"`  \/\/ 总调试事件数$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int
+TotalExecutionTime	debug_session_types.go	/^	TotalExecutionTime int64             `json:"total_execution_time"` \/\/ 总执行时间$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int64
+TotalOperations	debug_session_types.go	/^	TotalOperations    int               `json:"total_operations"`    \/\/ 总操作数$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int
+TriggerCount	debug_session_types.go	/^	TriggerCount       int               `json:"trigger_count"`      \/\/ 触发次数$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:int
+TriggeredBreakpoints	debug_session_types.go	/^	TriggeredBreakpoints int             `json:"triggered_breakpoints"` \/\/ 触发的断点数$/;"	m	language:Go	struct:main.SessionStatistics	typeref:typename:int
+Type	debug_session_types.go	/^	Type               string            `json:"type"`               \/\/ 内存类型 "stack", "he/;"	m	language:Go	struct:main.MemorySnapshot	typeref:typename:string
+Type	debug_session_types.go	/^	Type               string            `json:"type"`               \/\/ 参数类型$/;"	m	language:Go	struct:main.ParameterInfo	typeref:typename:string
+Type	debug_session_types.go	/^	Type               string            `json:"type"`               \/\/ 变量类型$/;"	m	language:Go	struct:main.VariableInfo	typeref:typename:string
+Type	debug_session_types.go	/^	Type               string            `json:"type"`               \/\/ 变量类型$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:string
+Type	debug_session_types.go	/^	Type               string            `json:"type"`               \/\/ 操作类型 "set_breakpo/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:string
+Type	main.go	/^	Type        string \/\/ "register", "stack", "memory"$/;"	m	language:Go	struct:main.VariableLocation	typeref:typename:string
+USER	debug_session_example.json	/^      "USER": "rlk"$/;"	s	language:JSON	object:environment.environment_vars
+Used	debug_session_types.go	/^	Used               int64             `json:"used"`               \/\/ 已用内存（字节）$/;"	m	language:Go	struct:main.MemoryInformation	typeref:typename:int64
+User	debug_session_types.go	/^	User               string            `json:"user"`               \/\/ 操作用户$/;"	m	language:Go	struct:main.BreakpointEvent	typeref:typename:string
+User	debug_session_types.go	/^	User               string            `json:"user"`               \/\/ 操作用户$/;"	m	language:Go	struct:main.DebugOperation	typeref:typename:string
+Username	debug_session_types.go	/^	Username           string            `json:"username"`           \/\/ 用户名$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+Value	debug_session_types.go	/^	Value              interface{}       `json:"value"`              \/\/ 变量值$/;"	m	language:Go	struct:main.VariableSnapshot	typeref:typename:interface{}
+ValueChanged	debug_session_types.go	/^	ValueChanged       bool              `json:"value_changed"`      \/\/ 值是否改变$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:bool
+VariableContext	debug_session_types.go	/^type VariableContext struct {$/;"	s	language:Go	package:main
+VariableHistory	debug_session_types.go	/^	VariableHistory    []VariableRecord     `json:"variable_history"` \/\/ 变量监控历史$/;"	m	language:Go	struct:main.DebugSession	typeref:typename:[]VariableRecord
+VariableInfo	debug_session_types.go	/^type VariableInfo struct {$/;"	s	language:Go	package:main
+VariableLocation	main.go	/^type VariableLocation struct {$/;"	s	language:Go	package:main
+VariableName	debug_session_types.go	/^	VariableName       string            `json:"variable_name"`      \/\/ 变量名$/;"	m	language:Go	struct:main.VariableRecord	typeref:typename:string
+VariableRecord	debug_session_types.go	/^type VariableRecord struct {$/;"	s	language:Go	package:main
+VariableSnapshot	debug_session_types.go	/^type VariableSnapshot struct {$/;"	s	language:Go	package:main
+VariableSnapshots	debug_session_types.go	/^	VariableSnapshots  []VariableSnapshot `json:"variable_snapshots"` \/\/ 变量快照$/;"	m	language:Go	struct:main.DebugEventRecord	typeref:typename:[]VariableSnapshot
+VariableStates	debug_session_types.go	/^	VariableStates     []VariableSnapshot   `json:"variable_states"`   \/\/ 变量状态$/;"	m	language:Go	struct:main.SessionSnapshot	typeref:typename:[]VariableSnapshot
+Version	debug_session_types.go	/^	Version            string            `json:"version"`             \/\/ JSON格式版本$/;"	m	language:Go	struct:main.SessionMetadata	typeref:typename:string
+Version	debug_session_types.go	/^	Version            string            `json:"version"`            \/\/ 项目版本$/;"	m	language:Go	struct:main.ProjectMetadata	typeref:typename:string
+Visible	main.go	/^	Visible    bool     \/\/ 是否可见$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:bool
+WatchedVariables	debug_session_types.go	/^	WatchedVariables   []string          `json:"watched_variables"`  \/\/ 监控的变量列表$/;"	m	language:Go	struct:main.ExtendedBreakpoint	typeref:typename:[]string
+Width	main.go	/^	Width      int      \/\/ 窗口宽度  $/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+WorkingDirectory	debug_session_types.go	/^	WorkingDirectory   string            `json:"working_directory"`  \/\/ 工作目录$/;"	m	language:Go	struct:main.ProcessInformation	typeref:typename:string
+WorkingDirectory	debug_session_types.go	/^	WorkingDirectory   string            `json:"working_directory"`  \/\/ 工作目录$/;"	m	language:Go	struct:main.SystemEnvironment	typeref:typename:string
+X	main.go	/^	X, Y       int      \/\/ 窗口左上角位置$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+Y	main.go	/^	X, Y       int      \/\/ 窗口左上角位置$/;"	m	language:Go	struct:main.PopupWindow	typeref:typename:int
+action	debug_session_example.json	/^          "action": "break",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+action	debug_session_example.json	/^      "action": "break",$/;"	s	language:JSON	object:breakpoints.0
+addBreakpoint	main.go	/^func addBreakpoint(ctx *DebuggerContext, file string, line int) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext, file string, line int)
+address	debug_session_example.json	/^              "address": 0,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+address	debug_session_example.json	/^              "address": 0,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+address	debug_session_example.json	/^              "address": 0,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+address	debug_session_example.json	/^            "address": 0,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0.debug_info
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:debug_events.0.call_stack.0
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.0
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.1
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.2
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0
+address	debug_session_example.json	/^          "address": 0,$/;"	n	language:JSON	object:snapshots.0.variable_states.0
+address	debug_session_example.json	/^        "address": 0,$/;"	n	language:JSON	object:breakpoints.0.debug_info
+adjustCommandHeightHandler	main.go	/^func adjustCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+adjustLeftPanelHandler	main.go	/^func adjustLeftPanelHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+after_lines	debug_session_example.json	/^            "after_lines": ["    for (int i = 0; i < 10; i++) {"],$/;"	a	language:JSON	object:snapshots.0.breakpoint_states.0.code_context
+after_lines	debug_session_example.json	/^        "after_lines": [$/;"	a	language:JSON	object:breakpoints.0.code_context
+analyzeSourceFile	debug_session_integration.go	/^func (dsm *DebugSessionManager) analyzeSourceFile(filePath string) SourceFileInfo {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:SourceFileInfo	signature:(filePath string)
+architecture	debug_session_example.json	/^      "architecture": "x86_64",$/;"	s	language:JSON	object:project.build_info
+architecture	debug_session_example.json	/^    "architecture": "x86_64",$/;"	s	language:JSON	object:environment
+arguments	debug_session_example.json	/^          "arguments": [$/;"	a	language:JSON	object:debug_events.0.call_stack.0
+arguments	debug_session_example.json	/^          "arguments": [$/;"	a	language:JSON	object:snapshots.0.call_stack_dump.0
+assembly	debug_session_example.json	/^            "assembly": ["mov %ebx, %eax", "add %ecx, %eax"]$/;"	a	language:JSON	object:snapshots.0.breakpoint_states.0.debug_info
+assembly	debug_session_example.json	/^        "assembly": [$/;"	a	language:JSON	object:breakpoints.0.debug_info
+auto_save_interval	debug_session_example.json	/^    "auto_save_interval": 30,$/;"	n	language:JSON	object:configuration
+available	debug_session_example.json	/^      "available": 8589934592,$/;"	n	language:JSON	object:environment.memory_info
+average_response_time	debug_session_example.json	/^    "average_response_time": 125.5,$/;"	n	language:JSON	object:statistics
+before_lines	debug_session_example.json	/^            "before_lines": ["    int local_var = 10;", "    int counter = 0;"],$/;"	a	language:JSON	object:snapshots.0.breakpoint_states.0.code_context
+before_lines	debug_session_example.json	/^        "before_lines": [$/;"	a	language:JSON	object:breakpoints.0.code_context
+bindPopupMouseEvents	main.go	/^func bindPopupMouseEvents(g *gocui.Gui, viewName string) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, viewName string)
+bpf_file	debug_session_example.json	/^          "bpf_file": "debug_breakpoints.bpf.c",$/;"	s	language:JSON	object:operations.1.result.data
+breakpoint_count	debug_session_example.json	/^        "breakpoint_count": 1$/;"	n	language:JSON	object:operations.1.parameters
+breakpoint_history	debug_session_example.json	/^  "breakpoint_history": [$/;"	a	language:JSON
+breakpoint_id	debug_session_example.json	/^          "breakpoint_id": "bp_001_abc1"$/;"	s	language:JSON	object:operations.0.result.data
+breakpoint_id	debug_session_example.json	/^      "breakpoint_id": "bp_001_abc1",$/;"	s	language:JSON	object:breakpoint_history.0
+breakpoint_id	debug_session_example.json	/^      "breakpoint_id": "bp_001_abc1",$/;"	s	language:JSON	object:breakpoint_history.1
+breakpoint_id	debug_session_example.json	/^      "breakpoint_id": "bp_001_abc1",$/;"	s	language:JSON	object:debug_events.0
+breakpoint_id	debug_session_example.json	/^      "breakpoint_id": "bp_001_abc1",$/;"	s	language:JSON	object:variable_history.0
+breakpoint_id	debug_session_example.json	/^      "breakpoint_id": "bp_001_abc1",$/;"	s	language:JSON	object:variable_history.1
+breakpoint_states	debug_session_example.json	/^      "breakpoint_states": [$/;"	a	language:JSON	object:snapshots.0
+breakpoints	debug_session_example.json	/^  "breakpoints": [$/;"	a	language:JSON
+buildFileTree	main.go	/^func buildFileTree(rootPath string) (*FileNode, error) {$/;"	f	language:Go	package:main	typeref:typename:(*FileNode, error)	signature:(rootPath string)
+build_info	debug_session_example.json	/^    "build_info": {$/;"	o	language:JSON	object:project
+build_time	debug_session_example.json	/^      "build_time": "2024-12-08T14:25:00.000Z"$/;"	s	language:JSON	object:project.build_info
+calculateAverageResponseTime	debug_session_integration.go	/^func (dsm *DebugSessionManager) calculateAverageResponseTime() float64 {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:float64	signature:()
+calculatePeakMemoryUsage	debug_session_integration.go	/^func (dsm *DebugSessionManager) calculatePeakMemoryUsage() int64 {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:int64	signature:()
+call_stack	debug_session_example.json	/^      "call_stack": [$/;"	a	language:JSON	object:debug_events.0
+call_stack_dump	debug_session_example.json	/^      "call_stack_dump": [$/;"	a	language:JSON	object:snapshots.0
+change_type	debug_session_example.json	/^      "change_type": "created",$/;"	s	language:JSON	object:variable_history.0
+change_type	debug_session_example.json	/^      "change_type": "modified",$/;"	s	language:JSON	object:variable_history.1
+checksum	debug_session_example.json	/^        "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",$/;"	s	language:JSON	object:project.source_files.0
+checksum	debug_session_example.json	/^    "checksum": "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"$/;"	s	language:JSON	object:metadata
+clearBreakpointsHandler	main.go	/^func clearBreakpointsHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+clearCurrentInput	main.go	/^func clearCurrentInput(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+clearSelection	main.go	/^func clearSelection(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+closePopupWindow	main.go	/^func closePopupWindow(ctx *DebuggerContext, id string) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext, id string)
+closePopupWindowWithView	main.go	/^func closePopupWindowWithView(g *gocui.Gui, ctx *DebuggerContext, id string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, ctx *DebuggerContext, id string)
+codeScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+code_context	debug_session_example.json	/^          "code_context": {$/;"	o	language:JSON	object:snapshots.0.breakpoint_states.0
+code_context	debug_session_example.json	/^      "code_context": {$/;"	o	language:JSON	object:breakpoints.0
+command	debug_session_example.json	/^        "command": "insmod"$/;"	s	language:JSON	object:breakpoint_history.1.data
+command	debug_session_example.json	/^        "command": "insmod",$/;"	s	language:JSON	object:debug_events.0.process_info
+command_line	debug_session_example.json	/^        "command_line": ["insmod", "simple_test.ko"],$/;"	a	language:JSON	object:debug_events.0.process_info
+compileBPF	main.go	/^func compileBPF(ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext)
+compileBPFWithArch	main.go	/^func compileBPFWithArch(ctx *DebuggerContext, targetArch string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext, targetArch string)
+compileVariableBPF	main.go	/^func compileVariableBPF(ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext)
+compileVariableBPFWithArch	main.go	/^func compileVariableBPFWithArch(ctx *DebuggerContext, targetArch string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext, targetArch string)
+compile_flags	debug_session_example.json	/^      "compile_flags": ["-g", "-O0", "-Wall", "-DDEBUG"],$/;"	a	language:JSON	object:project.build_info
+compiler_version	debug_session_example.json	/^      "compiler_version": "gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.2)",$/;"	s	language:JSON	object:project.build_info
+condition	debug_session_example.json	/^          "condition": "",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+condition	debug_session_example.json	/^      "condition": "",$/;"	s	language:JSON	object:breakpoints.0
+configuration	debug_session_example.json	/^  "configuration": {$/;"	o	language:JSON
+context	debug_session_example.json	/^      "context": {$/;"	o	language:JSON	object:variable_history.0
+context	debug_session_example.json	/^      "context": {$/;"	o	language:JSON	object:variable_history.1
+convertBreakpoint	debug_session_integration.go	/^func (dsm *DebugSessionManager) convertBreakpoint(bp Breakpoint) ExtendedBreakpoint {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:ExtendedBreakpoint	signature:(bp Breakpoint)
+convertExistingBreakpoints	debug_session_integration.go	/^func (dsm *DebugSessionManager) convertExistingBreakpoints(session *DebugSession) {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(session *DebugSession)
+copyToClipboard	main.go	/^func copyToClipboard(text string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(text string)
+copyWithOSC52	main.go	/^func copyWithOSC52(text string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(text string)
+cores	debug_session_example.json	/^      "cores": 8,$/;"	n	language:JSON	object:environment.cpu_info
+countFiles	main.go	/^func countFiles(node *FileNode) int {$/;"	f	language:Go	package:main	typeref:typename:int	signature:(node *FileNode)
+countTriggeredBreakpoints	debug_session_integration.go	/^func (dsm *DebugSessionManager) countTriggeredBreakpoints() int {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:int	signature:()
+cpu_context	debug_session_example.json	/^        "cpu_context": {$/;"	o	language:JSON	object:debug_events.0.execution_context
+cpu_context	debug_session_example.json	/^        "cpu_context": {$/;"	o	language:JSON	object:snapshots.0.execution_state
+cpu_info	debug_session_example.json	/^    "cpu_info": {$/;"	o	language:JSON	object:environment
+cpu_usage	debug_session_example.json	/^        "cpu_usage": 5.5,$/;"	n	language:JSON	object:debug_events.0.performance_data
+createPopupWindow	main.go	/^func createPopupWindow(ctx *DebuggerContext, id, title string, width, height int, content []stri/;"	f	language:Go	package:main	typeref:typename:*PopupWindow	signature:(ctx *DebuggerContext, id, title string, width, height int, content []string)
+created_by	debug_session_example.json	/^    "created_by": "kernel_driver_debug_tui v1.0.0",$/;"	s	language:JSON	object:metadata
+created_time	debug_session_example.json	/^          "created_time": "2024-12-08T14:31:15.000Z",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+created_time	debug_session_example.json	/^      "created_time": "2024-12-08T14:31:15.000Z",$/;"	s	language:JSON	object:breakpoints.0
+ctx	debug_session_integration.go	/^	ctx            *DebuggerContext$/;"	m	language:Go	struct:main.DebugSessionManager	typeref:typename:*DebuggerContext
+currentSession	debug_session_integration.go	/^	currentSession *DebugSession$/;"	m	language:Go	struct:main.DebugSessionManager	typeref:typename:*DebugSession
+current_file	debug_session_example.json	/^        "current_file": "simple_test.c",$/;"	s	language:JSON	object:debug_events.0.execution_context
+current_file	debug_session_example.json	/^        "current_file": "simple_test.c",$/;"	s	language:JSON	object:snapshots.0.execution_state
+current_function	debug_session_example.json	/^        "current_function": "test_function",$/;"	s	language:JSON	object:debug_events.0.execution_context
+current_function	debug_session_example.json	/^        "current_function": "test_function",$/;"	s	language:JSON	object:snapshots.0.execution_state
+current_line	debug_session_example.json	/^        "current_line": 30,$/;"	n	language:JSON	object:debug_events.0.execution_context
+current_line	debug_session_example.json	/^        "current_line": 30,$/;"	n	language:JSON	object:snapshots.0.execution_state
+data	debug_session_example.json	/^          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/;"	s	language:JSON	object:debug_events.0.memory_snapshots.0
+data	debug_session_example.json	/^          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/;"	s	language:JSON	object:snapshots.0.memory_dump.0
+data	debug_session_example.json	/^        "data": {$/;"	o	language:JSON	object:operations.0.result
+data	debug_session_example.json	/^        "data": {$/;"	o	language:JSON	object:operations.1.result
+data	debug_session_example.json	/^      "data": {$/;"	o	language:JSON	object:breakpoint_history.0
+data	debug_session_example.json	/^      "data": {$/;"	o	language:JSON	object:breakpoint_history.1
+debug_events	debug_session_example.json	/^  "debug_events": [$/;"	a	language:JSON
+debug_info	debug_session_example.json	/^          "debug_info": {$/;"	o	language:JSON	object:snapshots.0.breakpoint_states.0
+debug_info	debug_session_example.json	/^      "debug_info": {$/;"	o	language:JSON	object:breakpoints.0
+debug_symbols	debug_session_example.json	/^      "debug_symbols": true,$/;"	b	language:JSON	object:project.build_info
+dependencies	debug_session_example.json	/^    "dependencies": ["linux\/module.h", "linux\/kernel.h", "linux\/init.h"]$/;"	a	language:JSON	object:project
+description	debug_session_example.json	/^          "description": "temp数组内存区域"$/;"	s	language:JSON	object:debug_events.0.memory_snapshots.0
+description	debug_session_example.json	/^          "description": "函数局部变量内存区域"$/;"	s	language:JSON	object:snapshots.0.memory_dump.0
+description	debug_session_example.json	/^      "description": "test_function第一次被调用时的完整状态",$/;"	s	language:JSON	object:snapshots.0
+description	debug_session_example.json	/^      "description": "断点在simple_test.c:30创建",$/;"	s	language:JSON	object:breakpoint_history.0
+description	debug_session_example.json	/^      "description": "断点被触发",$/;"	s	language:JSON	object:breakpoint_history.1
+detectCurrentArch	main.go	/^func detectCurrentArch() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+detectResizeBoundary	main.go	/^func detectResizeBoundary(x, y int, layout *DynamicLayout, maxX, maxY int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(x, y int, layout *DynamicLayout, maxX, maxY int)
+displayFileTree	main.go	/^func displayFileTree(v *gocui.View, node *FileNode, depth int, scroll int) {$/;"	f	language:Go	package:main	signature:(v *gocui.View, node *FileNode, depth int, scroll int)
+displayFileTreeNode	main.go	/^func displayFileTreeNode(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext)
+displayFileTreeWithMapping	main.go	/^func displayFileTreeWithMapping(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext) /;"	f	language:Go	package:main	signature:(v *gocui.View, node *FileNode, depth int, ctx *DebuggerContext)
+duration	debug_session_example.json	/^            "duration": 25000$/;"	n	language:JSON	object:debug_events.0.performance_data.system_calls.0
+duration	debug_session_example.json	/^      "duration": 150$/;"	n	language:JSON	object:operations.0
+duration	debug_session_example.json	/^      "duration": 500$/;"	n	language:JSON	object:operations.1
+duration	debug_session_example.json	/^  "duration": 905665,$/;"	n	language:JSON
+dwarf_offset	debug_session_example.json	/^            "dwarf_offset": 4660,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0.debug_info
+dwarf_offset	debug_session_example.json	/^        "dwarf_offset": 4660,$/;"	n	language:JSON	object:breakpoints.0.debug_info
+eBPF 命令	README.md	/^### eBPF 命令$/;"	S	language:Markdown
+eBPF 编译工具链	README.md	/^# eBPF 编译工具链$/;"	c	language:Markdown
+enable_profiling	debug_session_example.json	/^    "enable_profiling": true,$/;"	b	language:JSON	object:configuration
+enabled	debug_session_example.json	/^          "enabled": true,$/;"	b	language:JSON	object:snapshots.0.breakpoint_states.0
+enabled	debug_session_example.json	/^      "enabled": true,$/;"	b	language:JSON	object:breakpoints.0
+endDebugSessionCommand	debug_session_integration.go	/^func endDebugSessionCommand(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+endDrag	main.go	/^func endDrag(layout *DynamicLayout) {$/;"	f	language:Go	package:main	signature:(layout *DynamicLayout)
+end_line	debug_session_example.json	/^            "end_line": 45,$/;"	n	language:JSON	object:project.source_files.0.functions.0
+end_time	debug_session_example.json	/^  "end_time": "2024-12-08T14:45:30.789012Z",$/;"	s	language:JSON
+ensureUniqueBreakpointIDs	debug_session_types.go	/^func (session *DebugSession) ensureUniqueBreakpointIDs() {$/;"	f	language:Go	unknown:main.DebugSession	signature:()
+environment	debug_session_example.json	/^        "environment": {$/;"	o	language:JSON	object:debug_events.0.process_info
+environment	debug_session_example.json	/^  "environment": {$/;"	o	language:JSON
+environment_vars	debug_session_example.json	/^    "environment_vars": {$/;"	o	language:JSON	object:environment
+escapeExitFullscreenHandler	main.go	/^func escapeExitFullscreenHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+event_type	debug_session_example.json	/^      "event_type": "created",$/;"	s	language:JSON	object:breakpoint_history.0
+event_type	debug_session_example.json	/^      "event_type": "triggered",$/;"	s	language:JSON	object:breakpoint_history.1
+execution_context	debug_session_example.json	/^      "execution_context": {$/;"	o	language:JSON	object:debug_events.0
+execution_state	debug_session_example.json	/^      "execution_state": {$/;"	o	language:JSON	object:snapshots.0
+execution_time	debug_session_example.json	/^        "execution_time": 125000,$/;"	n	language:JSON	object:debug_events.0.performance_data
+exitSearchMode	main.go	/^func exitSearchMode(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+export_time	debug_session_example.json	/^    "export_time": "2024-12-08T14:45:35.123456Z",$/;"	s	language:JSON	object:metadata
+extractFunctionName	main.go	/^func extractFunctionName(line string) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(line string)
+extractFunctions	debug_session_integration.go	/^func (dsm *DebugSessionManager) extractFunctions(lines []string) []FunctionInfo {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:[]FunctionInfo	signature:(lines []string)
+extractLocalVariables	debug_session_integration.go	/^func (dsm *DebugSessionManager) extractLocalVariables(lines []string, startLine, endLine int) []/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:[]VariableInfo	signature:(lines []string, startLine, endLine int)
+extractParameters	debug_session_integration.go	/^func (dsm *DebugSessionManager) extractParameters(line string) []ParameterInfo {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:[]ParameterInfo	signature:(line string)
+extractReturnType	debug_session_integration.go	/^func (dsm *DebugSessionManager) extractReturnType(line string) string {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:string	signature:(line string)
+extractVariablesFromLine	main.go	/^func extractVariablesFromLine(line string) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(line string)
+features	debug_session_example.json	/^      "features": ["fpu", "vme", "de", "pse", "tsc", "msr", "pae"]$/;"	a	language:JSON	object:environment.cpu_info
+file	debug_session_example.json	/^          "file": "simple_test.c",$/;"	s	language:JSON	object:debug_events.0.call_stack.0
+file	debug_session_example.json	/^          "file": "simple_test.c",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+file	debug_session_example.json	/^          "file": "simple_test.c",$/;"	s	language:JSON	object:snapshots.0.call_stack_dump.0
+file	debug_session_example.json	/^        "file": "simple_test.c",$/;"	s	language:JSON	object:breakpoint_history.0.data
+file	debug_session_example.json	/^        "file": "simple_test.c",$/;"	s	language:JSON	object:operations.0.parameters
+file	debug_session_example.json	/^        "file": "simple_test.c",$/;"	s	language:JSON	object:variable_history.0.context
+file	debug_session_example.json	/^        "file": "simple_test.c",$/;"	s	language:JSON	object:variable_history.1.context
+file	debug_session_example.json	/^      "file": "\/home\/rlk\/xiafeng.luo\/MoneyProject\/kernel_driver_debug_tui\/simple_test.c",$/;"	s	language:JSON	object:breakpoints.0
+fileBrowserDisplayLines	main.go	/^	fileBrowserDisplayLines []string \/\/ 记录显示的行内容，用于调试$/;"	v	language:Go	package:main
+fileBrowserLineMap	main.go	/^	fileBrowserLineMap []*FileNode \/\/ 记录文件浏览器每一行对应的FileNode$/;"	v	language:Go	package:main
+fileScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+findFunctionBounds	main.go	/^func findFunctionBounds(lines []string, targetLine int) (int, int) {$/;"	f	language:Go	package:main	typeref:typename:(int, int)	signature:(lines []string, targetLine int)
+findFunctionEnd	debug_session_integration.go	/^func (dsm *DebugSessionManager) findFunctionEnd(lines []string, startLine int) int {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:int	signature:(lines []string, startLine int)
+findFunctionScope	debug_session_integration.go	/^func (dsm *DebugSessionManager) findFunctionScope(content []string, lineNumber int) string {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:string	signature:(content []string, lineNumber int)
+findPopupWindow	main.go	/^func findPopupWindow(ctx *DebuggerContext, id string) *PopupWindow {$/;"	f	language:Go	package:main	typeref:typename:*PopupWindow	signature:(ctx *DebuggerContext, id string)
+flags	debug_session_example.json	/^          "flags": 514$/;"	n	language:JSON	object:debug_events.0.execution_context.cpu_context
+flags	debug_session_example.json	/^          "flags": 514$/;"	n	language:JSON	object:snapshots.0.execution_state.cpu_context
+focusNames	main.go	/^	focusNames = []string{"File Browser", "Registers", "Variables", "Call Stack", "Code View", "Mem/;"	v	language:Go	package:main
+frame_pointer	debug_session_example.json	/^          "frame_pointer": 0,$/;"	n	language:JSON	object:debug_events.0.execution_context.cpu_context
+frame_pointer	debug_session_example.json	/^          "frame_pointer": 0,$/;"	n	language:JSON	object:snapshots.0.execution_state.cpu_context
+frequency	debug_session_example.json	/^      "frequency": "3.70GHz",$/;"	s	language:JSON	object:environment.cpu_info
+function	debug_session_example.json	/^          "function": "test_function",$/;"	s	language:JSON	object:debug_events.0.call_stack.0
+function	debug_session_example.json	/^          "function": "test_function",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+function	debug_session_example.json	/^          "function": "test_function",$/;"	s	language:JSON	object:snapshots.0.call_stack_dump.0
+function	debug_session_example.json	/^        "function": "test_function"$/;"	s	language:JSON	object:breakpoint_history.0.data
+function	debug_session_example.json	/^        "function": "test_function"$/;"	s	language:JSON	object:operations.0.parameters
+function	debug_session_example.json	/^        "function": "test_function",$/;"	s	language:JSON	object:variable_history.0.context
+function	debug_session_example.json	/^        "function": "test_function",$/;"	s	language:JSON	object:variable_history.1.context
+function	debug_session_example.json	/^      "function": "test_function",$/;"	s	language:JSON	object:breakpoints.0
+function_count	debug_session_example.json	/^        "function_count": 3,$/;"	n	language:JSON	object:project.source_files.0
+function_scope	debug_session_example.json	/^            "function_scope": "test_function"$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0.code_context
+function_scope	debug_session_example.json	/^        "function_scope": "test_function"$/;"	s	language:JSON	object:breakpoints.0.code_context
+functions	debug_session_example.json	/^        "functions": [$/;"	a	language:JSON	object:project.source_files.0
+generateBPF	main.go	/^func generateBPF(ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext)
+generateBPFHandler	main.go	/^func generateBPFHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+generateBPFWithVariables	main.go	/^func generateBPFWithVariables(ctx *DebuggerContext, requestedVars []string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext, requestedVars []string)
+generateBreakpointID	debug_session_types.go	/^func generateBreakpointID(index int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(index int)
+generateEventID	debug_session_integration.go	/^func generateEventID() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+generateExecutionScript	systemtap_generator.go	/^func generateExecutionScript(ctx *DebuggerContext, scriptPath string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext, scriptPath string)
+generateFileChecksum	debug_session_integration.go	/^func generateFileChecksum(filePath string) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(filePath string)
+generateLoadScript	main.go	/^func generateLoadScript(scriptPath string, breakpointCount int) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(scriptPath string, breakpointCount int)
+generateOperationID	debug_session_integration.go	/^func generateOperationID() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+generateSessionID	debug_session_types.go	/^func generateSessionID() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+generateSystemTapCommand	systemtap_generator.go	/^func generateSystemTapCommand(ctx *DebuggerContext, args string) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(ctx *DebuggerContext, args string)
+generateSystemTapScript	systemtap_generator.go	/^func generateSystemTapScript(ctx *DebuggerContext, outputJSONFile string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext, outputJSONFile string)
+generateUnloadScript	main.go	/^func generateUnloadScript(scriptPath string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(scriptPath string)
+generateVarsLoadScript	main.go	/^func generateVarsLoadScript(scriptPath string, breakpointCount int) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(scriptPath string, breakpointCount int)
+generateVarsUnloadScript	main.go	/^func generateVarsUnloadScript(scriptPath string) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(scriptPath string)
+getBoundaryName	main.go	/^func getBoundaryName(boundary string) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(boundary string)
+getCPUModel	debug_session_integration.go	/^func getCPUModel() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+getCodeContext	debug_session_integration.go	/^func (dsm *DebugSessionManager) getCodeContext(filePath string, lineNumber int) CodeContext {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:CodeContext	signature:(filePath string, lineNumber int)
+getKernelVersion	debug_session_integration.go	/^func getKernelVersion() string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:()
+getMemoryInfo	debug_session_integration.go	/^func getMemoryInfo() int64 {$/;"	f	language:Go	package:main	typeref:typename:int64	signature:()
+getPopupWindowAt	main.go	/^func getPopupWindowAt(ctx *DebuggerContext, x, y int) *PopupWindow {$/;"	f	language:Go	package:main	typeref:typename:*PopupWindow	signature:(ctx *DebuggerContext, x, y int)
+getRISCVRegisterName	main.go	/^func getRISCVRegisterName(regNum int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(regNum int)
+getSelectedText	main.go	/^func getSelectedText(g *gocui.Gui, v *gocui.View, ctx *DebuggerContext) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(g *gocui.Gui, v *gocui.View, ctx *DebuggerContext)
+getTextFromLine	main.go	/^func getTextFromLine(v *gocui.View, lineNum, startX, endX int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(v *gocui.View, lineNum, startX, endX int)
+getTypeSize	debug_session_integration.go	/^func getTypeSize(typeName string) int {$/;"	f	language:Go	package:main	typeref:typename:int	signature:(typeName string)
+getViewText	main.go	/^func getViewText(g *gocui.Gui, viewName string) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(g *gocui.Gui, viewName string)
+globalCtx	main.go	/^	globalCtx *DebuggerContext$/;"	v	language:Go	package:main
+handleBackspace	main.go	/^func handleBackspace(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleBreakpointToggle	main.go	/^func handleBreakpointToggle(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleCharInput	main.go	/^func handleCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:func(g *gocui.Gui, v *gocui.View) error	signature:(ch rune)
+handleCodeViewClick	main.go	/^func handleCodeViewClick(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleCommand	main.go	/^func handleCommand(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleCommandClick	main.go	/^func handleCommandClick(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleDragMove	main.go	/^func handleDragMove(x, y int, layout *DynamicLayout, maxX, maxY int) {$/;"	f	language:Go	package:main	signature:(x, y int, layout *DynamicLayout, maxX, maxY int)
+handleFileBrowserClick	main.go	/^func handleFileBrowserClick(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleFileSelection	main.go	/^func handleFileSelection(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleSearchBackspace	main.go	/^func handleSearchBackspace(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleSearchCharInput	main.go	/^func handleSearchCharInput(ch rune) func(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:func(g *gocui.Gui, v *gocui.View) error	signature:(ch rune)
+handleSearchEnter	main.go	/^func handleSearchEnter(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+handleSearchEscape	main.go	/^func handleSearchEscape(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+has_debug_symbols	debug_session_example.json	/^            "has_debug_symbols": true,$/;"	b	language:JSON	object:snapshots.0.breakpoint_states.0.debug_info
+has_debug_symbols	debug_session_example.json	/^        "has_debug_symbols": true,$/;"	b	language:JSON	object:breakpoints.0.debug_info
+highlightSearchMatches	main.go	/^func highlightSearchMatches(line string, lineNumber int, ctx *DebuggerContext) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(line string, lineNumber int, ctx *DebuggerContext)
+hit_condition	debug_session_example.json	/^          "hit_condition": "",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+hit_condition	debug_session_example.json	/^      "hit_condition": "",$/;"	s	language:JSON	object:breakpoints.0
+hit_count	debug_session_example.json	/^          "hit_count": 0,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0
+hit_count	debug_session_example.json	/^      "hit_count": 0,$/;"	n	language:JSON	object:breakpoints.0
+hostname	debug_session_example.json	/^    "hostname": "rlk-dev-machine",$/;"	s	language:JSON	object:environment
+id	debug_session_example.json	/^          "id": "bp_001_abc1",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+id	debug_session_example.json	/^      "id": "bp_001_abc1",$/;"	s	language:JSON	object:breakpoints.0
+id	debug_session_example.json	/^      "id": "debug_001",$/;"	s	language:JSON	object:debug_events.0
+id	debug_session_example.json	/^      "id": "event_001",$/;"	s	language:JSON	object:breakpoint_history.0
+id	debug_session_example.json	/^      "id": "event_002",$/;"	s	language:JSON	object:breakpoint_history.1
+id	debug_session_example.json	/^      "id": "op_001",$/;"	s	language:JSON	object:operations.0
+id	debug_session_example.json	/^      "id": "op_002",$/;"	s	language:JSON	object:operations.1
+id	debug_session_example.json	/^      "id": "snapshot_001",$/;"	s	language:JSON	object:snapshots.0
+id	debug_session_example.json	/^      "id": "var_001",$/;"	s	language:JSON	object:variable_history.0
+id	debug_session_example.json	/^      "id": "var_002",$/;"	s	language:JSON	object:variable_history.1
+indent_level	debug_session_example.json	/^            "indent_level": 4,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0.code_context
+indent_level	debug_session_example.json	/^        "indent_level": 4,$/;"	n	language:JSON	object:breakpoints.0.code_context
+initDynamicLayout	main.go	/^func initDynamicLayout(maxX, maxY int) *DynamicLayout {$/;"	f	language:Go	package:main	typeref:typename:*DynamicLayout	signature:(maxX, maxY int)
+initializeMetadata	debug_session_integration.go	/^func (dsm *DebugSessionManager) initializeMetadata(session *DebugSession) {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(session *DebugSession)
+instruction_pointer	debug_session_example.json	/^          "instruction_pointer": 0,$/;"	n	language:JSON	object:debug_events.0.execution_context.cpu_context
+instruction_pointer	debug_session_example.json	/^          "instruction_pointer": 0,$/;"	n	language:JSON	object:snapshots.0.execution_state.cpu_context
+isInPopupTitleBar	main.go	/^func isInPopupTitleBar(popup *PopupWindow, x, y int) bool {$/;"	f	language:Go	package:main	typeref:typename:bool	signature:(popup *PopupWindow, x, y int)
+isKernelModule	systemtap_generator.go	/^func isKernelModule(ctx *DebuggerContext) (bool, string) {$/;"	f	language:Go	package:main	typeref:typename:(bool, string)	signature:(ctx *DebuggerContext)
+isKeyword	main.go	/^func isKeyword(word string) bool {$/;"	f	language:Go	package:main	typeref:typename:bool	signature:(word string)
+isValidFunctionName	main.go	/^func isValidFunctionName(name string) bool {$/;"	f	language:Go	package:main	typeref:typename:bool	signature:(name string)
+isWordChar	main.go	/^func isWordChar(c byte) bool {$/;"	f	language:Go	package:main	typeref:typename:bool	signature:(c byte)
+is_pointer	debug_session_example.json	/^              "is_pointer": false$/;"	b	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+is_pointer	debug_session_example.json	/^              "is_pointer": false$/;"	b	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+is_pointer	debug_session_example.json	/^              "is_pointer": false$/;"	b	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+is_pointer	debug_session_example.json	/^          "is_pointer": false$/;"	b	language:JSON	object:debug_events.0.variable_snapshots.0
+is_pointer	debug_session_example.json	/^          "is_pointer": false$/;"	b	language:JSON	object:debug_events.0.variable_snapshots.1
+is_pointer	debug_session_example.json	/^          "is_pointer": false$/;"	b	language:JSON	object:debug_events.0.variable_snapshots.2
+is_pointer	debug_session_example.json	/^          "is_pointer": false$/;"	b	language:JSON	object:snapshots.0.variable_states.0
+jumpToNextMatch	main.go	/^func jumpToNextMatch(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+jumpToNextMatchHandler	main.go	/^func jumpToNextMatchHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+jumpToPrevMatch	main.go	/^func jumpToPrevMatch(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+jumpToPrevMatchHandler	main.go	/^func jumpToPrevMatchHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+kernel_version	debug_session_example.json	/^    "kernel_version": "5.15.0-136-generic",$/;"	s	language:JSON	object:environment
+last_error	debug_session_example.json	/^          "last_error": ""$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+last_error	debug_session_example.json	/^      "last_error": ""$/;"	s	language:JSON	object:breakpoints.0
+last_modified	debug_session_example.json	/^        "last_modified": "2024-12-08T14:20:15.000Z",$/;"	s	language:JSON	object:project.source_files.0
+last_triggered	debug_session_example.json	/^          "last_triggered": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+last_triggered	debug_session_example.json	/^      "last_triggered": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:breakpoints.0
+layout	main.go	/^func layout(g *gocui.Gui) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui)
+layoutFullscreen	main.go	/^func layoutFullscreen(g *gocui.Gui, viewName string, maxX, maxY int) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, viewName string, maxX, maxY int)
+level	debug_session_example.json	/^          "level": 0,$/;"	n	language:JSON	object:debug_events.0.call_stack.0
+level	debug_session_example.json	/^          "level": 0,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0
+line	debug_session_example.json	/^          "line": 30,$/;"	n	language:JSON	object:debug_events.0.call_stack.0
+line	debug_session_example.json	/^          "line": 30,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0
+line	debug_session_example.json	/^          "line": 30,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0
+line	debug_session_example.json	/^        "line": 30,$/;"	n	language:JSON	object:breakpoint_history.0.data
+line	debug_session_example.json	/^        "line": 30,$/;"	n	language:JSON	object:operations.0.parameters
+line	debug_session_example.json	/^        "line": 30,$/;"	n	language:JSON	object:variable_history.0.context
+line	debug_session_example.json	/^        "line": 30,$/;"	n	language:JSON	object:variable_history.1.context
+line	debug_session_example.json	/^      "line": 30,$/;"	n	language:JSON	object:breakpoints.0
+line_content	debug_session_example.json	/^            "line_content": "    counter = local_var + param;",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0.code_context
+line_content	debug_session_example.json	/^        "line_content": "    counter = local_var + param;",$/;"	s	language:JSON	object:breakpoints.0.code_context
+line_count	debug_session_example.json	/^        "line_count": 89,$/;"	n	language:JSON	object:project.source_files.0
+loadBreakpoints	main.go	/^func loadBreakpoints(ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext)
+local_variables	debug_session_example.json	/^            "local_variables": [$/;"	a	language:JSON	object:project.source_files.0.functions.0
+local_variables	debug_session_example.json	/^          "local_variables": [$/;"	a	language:JSON	object:debug_events.0.call_stack.0
+local_variables	debug_session_example.json	/^          "local_variables": []$/;"	a	language:JSON	object:snapshots.0.call_stack_dump.0
+location	debug_session_example.json	/^                "location": {$/;"	o	language:JSON	object:project.source_files.0.functions.0.local_variables.0
+location	debug_session_example.json	/^                "location": {$/;"	o	language:JSON	object:project.source_files.0.functions.0.local_variables.1
+log_level	debug_session_example.json	/^    "log_level": "INFO",$/;"	s	language:JSON	object:configuration
+log_message	debug_session_example.json	/^          "log_message": "",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+log_message	debug_session_example.json	/^      "log_message": "",$/;"	s	language:JSON	object:breakpoints.0
+main	debug_session_integration.go	/^package main$/;"	p	language:Go
+main	debug_session_types.go	/^package main$/;"	p	language:Go
+main	main.go	/^func main() {$/;"	f	language:Go	package:main	signature:()
+main	main.go	/^package main$/;"	p	language:Go
+main	systemtap_generator.go	/^package main$/;"	p	language:Go
+matchFunctionPattern	main.go	/^func matchFunctionPattern(line, pattern string) (bool, string) {$/;"	f	language:Go	package:main	typeref:typename:(bool, string)	signature:(line, pattern string)
+max	debug_session_integration.go	/^func max(a, b int) int {$/;"	f	language:Go	package:main	typeref:typename:int	signature:(a, b int)
+max_breakpoints	debug_session_example.json	/^    "max_breakpoints": 100,$/;"	n	language:JSON	object:configuration
+max_event_history	debug_session_example.json	/^    "max_event_history": 1000,$/;"	n	language:JSON	object:configuration
+memScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+memory_dump	debug_session_example.json	/^      "memory_dump": [$/;"	a	language:JSON	object:snapshots.0
+memory_dump_size	debug_session_example.json	/^    "memory_dump_size": 4096,$/;"	n	language:JSON	object:configuration
+memory_info	debug_session_example.json	/^    "memory_info": {$/;"	o	language:JSON	object:environment
+memory_snapshots	debug_session_example.json	/^      "memory_snapshots": [$/;"	a	language:JSON	object:debug_events.0
+memory_usage	debug_session_example.json	/^        "memory_usage": 4096,$/;"	n	language:JSON	object:debug_events.0.performance_data
+message	debug_session_example.json	/^        "message": "BPF代码生成成功",$/;"	s	language:JSON	object:operations.1.result
+message	debug_session_example.json	/^        "message": "断点设置成功",$/;"	s	language:JSON	object:operations.0.result
+metadata	debug_session_example.json	/^  "metadata": {$/;"	o	language:JSON
+min	debug_session_integration.go	/^func min(a, b int) int {$/;"	f	language:Go	package:main	typeref:typename:int	signature:(a, b int)
+model	debug_session_example.json	/^      "model": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",$/;"	s	language:JSON	object:environment.cpu_info
+mouseDownHandler	main.go	/^func mouseDownHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseDragHandler	main.go	/^func mouseDragHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseDragResizeHandler	main.go	/^func mouseDragResizeHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseFocusHandler	main.go	/^func mouseFocusHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseScrollDownHandler	main.go	/^func mouseScrollDownHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseScrollUpHandler	main.go	/^func mouseScrollUpHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseSelectEndHandler	main.go	/^func mouseSelectEndHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseSelectStartHandler	main.go	/^func mouseSelectStartHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+mouseUpHandler	main.go	/^func mouseUpHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+name	debug_session_example.json	/^                  "name": "counter",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1.location
+name	debug_session_example.json	/^                  "name": "local_var",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0.location
+name	debug_session_example.json	/^                "name": "counter",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1
+name	debug_session_example.json	/^                "name": "local_var",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0
+name	debug_session_example.json	/^                "name": "param",$/;"	s	language:JSON	object:project.source_files.0.functions.0.parameters.0
+name	debug_session_example.json	/^              "name": "local_var",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+name	debug_session_example.json	/^              "name": "param",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+name	debug_session_example.json	/^              "name": "param",$/;"	s	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+name	debug_session_example.json	/^            "name": "printk",$/;"	s	language:JSON	object:debug_events.0.performance_data.system_calls.0
+name	debug_session_example.json	/^            "name": "test_function",$/;"	s	language:JSON	object:project.source_files.0.functions.0
+name	debug_session_example.json	/^          "name": "counter",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.1
+name	debug_session_example.json	/^          "name": "local_var",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.0
+name	debug_session_example.json	/^          "name": "local_var",$/;"	s	language:JSON	object:snapshots.0.variable_states.0
+name	debug_session_example.json	/^          "name": "param",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.2
+name	debug_session_example.json	/^      "name": "断点首次触发状态",$/;"	s	language:JSON	object:snapshots.0
+name	debug_session_example.json	/^    "name": "kernel_driver_debug_tui",$/;"	s	language:JSON	object:project
+new_value	debug_session_example.json	/^      "new_value": 0,$/;"	n	language:JSON	object:variable_history.0
+new_value	debug_session_example.json	/^      "new_value": 52,$/;"	n	language:JSON	object:variable_history.1
+nextViewHandler	main.go	/^func nextViewHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+notes	debug_session_example.json	/^    "notes": "内核模块test_function的调试会话，包含变量监控和断点触发记录/;"	s	language:JSON	object:metadata
+old_value	debug_session_example.json	/^      "old_value": 0,$/;"	n	language:JSON	object:variable_history.1
+old_value	debug_session_example.json	/^      "old_value": null,$/;"	z	language:JSON	object:variable_history.0
+openProject	main.go	/^func openProject(projectPath string) (*ProjectInfo, error) {$/;"	f	language:Go	package:main	typeref:typename:(*ProjectInfo, error)	signature:(projectPath string)
+operating_system	debug_session_example.json	/^    "operating_system": "Linux",$/;"	s	language:JSON	object:environment
+operations	debug_session_example.json	/^  "operations": [$/;"	a	language:JSON
+optimization_level	debug_session_example.json	/^      "optimization_level": "O0",$/;"	s	language:JSON	object:project.build_info
+parameters	debug_session_example.json	/^            "parameters": ["test_function called with param=%d", 42],$/;"	a	language:JSON	object:debug_events.0.performance_data.system_calls.0
+parameters	debug_session_example.json	/^            "parameters": [$/;"	a	language:JSON	object:project.source_files.0.functions.0
+parameters	debug_session_example.json	/^      "parameters": {$/;"	o	language:JSON	object:operations.0
+parameters	debug_session_example.json	/^      "parameters": {$/;"	o	language:JSON	object:operations.1
+parseAllFunctionVariables	main.go	/^func parseAllFunctionVariables(filePath string, lineNumber int) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(filePath string, lineNumber int)
+parseDWARFVariableLocations	main.go	/^func parseDWARFVariableLocations(filePath string, lineNumber int, varNames []string) map[string]/;"	f	language:Go	package:main	typeref:typename:map[string]VariableLocation	signature:(filePath string, lineNumber int, varNames []string)
+parseFunctionName	main.go	/^func parseFunctionName(filePath string, targetLine int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(filePath string, targetLine int)
+parseFunctionVariables	main.go	/^func parseFunctionVariables(dwarfData *dwarf.Data, funcEntry *dwarf.Entry, lineNumber int, varNa/;"	f	language:Go	package:main	typeref:typename:map[string]VariableLocation	signature:(dwarfData *dwarf.Data, funcEntry *dwarf.Entry, lineNumber int, varNames []string)
+parseLocationExpression	main.go	/^func parseLocationExpression(locationData interface{}) *VariableLocation {$/;"	f	language:Go	package:main	typeref:typename:*VariableLocation	signature:(locationData interface{})
+parseRealDWARF	main.go	/^func parseRealDWARF(binaryPath string, lineNumber int, varNames []string) map[string]VariableLoc/;"	f	language:Go	package:main	typeref:typename:map[string]VariableLocation	signature:(binaryPath string, lineNumber int, varNames []string)
+parseVariableDeclaration	debug_session_integration.go	/^func (dsm *DebugSessionManager) parseVariableDeclaration(line string) []VariableInfo {$/;"	f	language:Go	unknown:main.DebugSessionManager	typeref:typename:[]VariableInfo	signature:(line string)
+parseVariableEntry	main.go	/^func parseVariableEntry(entry *dwarf.Entry, varNames []string) *VariableLocation {$/;"	f	language:Go	package:main	typeref:typename:*VariableLocation	signature:(entry *dwarf.Entry, varNames []string)
+parseVariablesFromDWARF	main.go	/^func parseVariablesFromDWARF(filePath string, lineNumber int) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(filePath string, lineNumber int)
+parseVariablesFromSource	main.go	/^func parseVariablesFromSource(filePath string, targetLine int) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(filePath string, targetLine int)
+path	debug_session_example.json	/^        "path": "\/home\/rlk\/xiafeng.luo\/MoneyProject\/kernel_driver_debug_tui\/simple_test.c"/;"	s	language:JSON	object:project.source_files.0
+peak_memory_usage	debug_session_example.json	/^    "peak_memory_usage": 8192,$/;"	n	language:JSON	object:statistics
+performSearch	main.go	/^func performSearch(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+performance_data	debug_session_example.json	/^      "performance_data": {$/;"	o	language:JSON	object:debug_events.0
+pid	debug_session_example.json	/^        "pid": 1234,$/;"	n	language:JSON	object:breakpoint_history.1.data
+pid	debug_session_example.json	/^        "pid": 1234,$/;"	n	language:JSON	object:debug_events.0.process_info
+populateEnvironmentInfo	debug_session_integration.go	/^func (dsm *DebugSessionManager) populateEnvironmentInfo(session *DebugSession) {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(session *DebugSession)
+populateProjectInfo	debug_session_integration.go	/^func (dsm *DebugSessionManager) populateProjectInfo(session *DebugSession) {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(session *DebugSession)
+popupCloseHandler	main.go	/^func popupCloseHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+popupMouseHandler	main.go	/^func popupMouseHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+popupScrollDownHandler	main.go	/^func popupScrollDownHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+popupScrollUpHandler	main.go	/^func popupScrollUpHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+ppid	debug_session_example.json	/^        "ppid": 1000,$/;"	n	language:JSON	object:debug_events.0.process_info
+prevViewHandler	main.go	/^func prevViewHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+process_info	debug_session_example.json	/^      "process_info": {$/;"	o	language:JSON	object:debug_events.0
+project	debug_session_example.json	/^  "project": {$/;"	o	language:JSON
+quit	main.go	/^func quit(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+randomString	debug_session_types.go	/^func randomString(length int) string {$/;"	f	language:Go	package:main	typeref:typename:string	signature:(length int)
+raw_value	debug_session_example.json	/^              "raw_value": "0x0000000a",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+raw_value	debug_session_example.json	/^              "raw_value": "0x0000002a",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+raw_value	debug_session_example.json	/^              "raw_value": "0x0000002a",$/;"	s	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+raw_value	debug_session_example.json	/^          "raw_value": "0x00000000",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.1
+raw_value	debug_session_example.json	/^          "raw_value": "0x0000000a",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.0
+raw_value	debug_session_example.json	/^          "raw_value": "0x0000000a",$/;"	s	language:JSON	object:snapshots.0.variable_states.0
+raw_value	debug_session_example.json	/^          "raw_value": "0x0000002a",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.2
+rax	debug_session_example.json	/^        "rax": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+rax	debug_session_example.json	/^        "rax": 0,$/;"	n	language:JSON	object:snapshots.0.register_dump
+rbp	debug_session_example.json	/^        "rbp": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+rbx	debug_session_example.json	/^        "rbx": 10,$/;"	n	language:JSON	object:debug_events.0.register_state
+rbx	debug_session_example.json	/^        "rbx": 10,$/;"	n	language:JSON	object:snapshots.0.register_dump
+rcx	debug_session_example.json	/^        "rcx": 42$/;"	n	language:JSON	object:snapshots.0.register_dump
+rcx	debug_session_example.json	/^        "rcx": 42,$/;"	n	language:JSON	object:debug_events.0.register_state
+rdi	debug_session_example.json	/^        "rdi": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+rdx	debug_session_example.json	/^        "rdx": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+readFileContent	main.go	/^func readFileContent(filePath string) ([]string, error) {$/;"	f	language:Go	package:main	typeref:typename:([]string, error)	signature:(filePath string)
+recordOperation	debug_session_integration.go	/^func (dsm *DebugSessionManager) recordOperation(opType string, params map[string]interface{}, su/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(opType string, params map[string]interface{}, success bool, message string)
+regScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+register	debug_session_example.json	/^                  "register": "rax",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1.location
+register	debug_session_example.json	/^                  "register": "rbx",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0.location
+register_dump	debug_session_example.json	/^      "register_dump": {$/;"	o	language:JSON	object:snapshots.0
+register_state	debug_session_example.json	/^      "register_state": {$/;"	o	language:JSON	object:debug_events.0
+relative_path	debug_session_example.json	/^        "relative_path": "simple_test.c",$/;"	s	language:JSON	object:project.source_files.0
+renderPopupWindows	main.go	/^func renderPopupWindows(g *gocui.Gui, ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, ctx *DebuggerContext)
+replay_buffer_size	debug_session_example.json	/^    "replay_buffer_size": 500$/;"	n	language:JSON	object:configuration
+resetLayout	main.go	/^func resetLayout(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+restoreBreakpoints	debug_session_integration.go	/^func (dsm *DebugSessionManager) restoreBreakpoints() {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:()
+result	debug_session_example.json	/^      "result": {$/;"	o	language:JSON	object:operations.0
+result	debug_session_example.json	/^      "result": {$/;"	o	language:JSON	object:operations.1
+return_type	debug_session_example.json	/^            "return_type": "void"$/;"	s	language:JSON	object:project.source_files.0.functions.0
+return_value	debug_session_example.json	/^            "return_value": 35,$/;"	n	language:JSON	object:debug_events.0.performance_data.system_calls.0
+rflags	debug_session_example.json	/^        "rflags": 514$/;"	n	language:JSON	object:debug_events.0.register_state
+rip	debug_session_example.json	/^        "rip": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+root_path	debug_session_example.json	/^    "root_path": "\/home\/rlk\/xiafeng.luo\/MoneyProject\/kernel_driver_debug_tui",$/;"	s	language:JSON	object:project
+rsi	debug_session_example.json	/^        "rsi": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+rsp	debug_session_example.json	/^        "rsp": 0,$/;"	n	language:JSON	object:debug_events.0.register_state
+saveBreakpoints	main.go	/^func saveBreakpoints(ctx *DebuggerContext) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(ctx *DebuggerContext)
+saveDebugSessionCommand	debug_session_integration.go	/^func saveDebugSessionCommand(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+scope	debug_session_example.json	/^                "scope": "local",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0
+scope	debug_session_example.json	/^                "scope": "local",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1
+scope	debug_session_example.json	/^        "scope": "local"$/;"	s	language:JSON	object:variable_history.0.context
+scope	debug_session_example.json	/^        "scope": "local"$/;"	s	language:JSON	object:variable_history.1.context
+scrollDownHandler	main.go	/^func scrollDownHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+scrollUpHandler	main.go	/^func scrollUpHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+scrollWindowByName	main.go	/^func scrollWindowByName(name string, direction int) {$/;"	f	language:Go	package:main	signature:(name string, direction int)
+selectCurrentLine	main.go	/^func selectCurrentLine(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+selectWordAtCursor	main.go	/^func selectWordAtCursor(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+sessionFile	debug_session_integration.go	/^	sessionFile    string$/;"	m	language:Go	struct:main.DebugSessionManager	typeref:typename:string
+session_id	debug_session_example.json	/^  "session_id": "20241208_143025_abc12345",$/;"	s	language:JSON
+session_name	debug_session_example.json	/^  "session_name": "内核模块test_function调试会话",$/;"	s	language:JSON
+setDefaultConfiguration	debug_session_integration.go	/^func (dsm *DebugSessionManager) setDefaultConfiguration(session *DebugSession) {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:(session *DebugSession)
+showBreakpointsPopup	main.go	/^func showBreakpointsPopup(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+showPopupWindow	main.go	/^func showPopupWindow(ctx *DebuggerContext, popup *PopupWindow) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext, popup *PopupWindow)
+shrinkCommandHeightHandler	main.go	/^func shrinkCommandHeightHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+shrinkLeftPanelHandler	main.go	/^func shrinkLeftPanelHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+size	debug_session_example.json	/^                  "size": 4$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.0.location
+size	debug_session_example.json	/^                  "size": 4$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.1.location
+size	debug_session_example.json	/^                "size": 4$/;"	n	language:JSON	object:project.source_files.0.functions.0.parameters.0
+size	debug_session_example.json	/^                "size": 4,$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.0
+size	debug_session_example.json	/^                "size": 4,$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.1
+size	debug_session_example.json	/^              "size": 4,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+size	debug_session_example.json	/^              "size": 4,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+size	debug_session_example.json	/^              "size": 4,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+size	debug_session_example.json	/^          "size": 2048$/;"	n	language:JSON	object:operations.1.result.data
+size	debug_session_example.json	/^          "size": 4,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.0
+size	debug_session_example.json	/^          "size": 4,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.1
+size	debug_session_example.json	/^          "size": 4,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.2
+size	debug_session_example.json	/^          "size": 4,$/;"	n	language:JSON	object:snapshots.0.variable_states.0
+size	debug_session_example.json	/^          "size": 80,$/;"	n	language:JSON	object:debug_events.0.memory_snapshots.0
+size	debug_session_example.json	/^          "size": 80,$/;"	n	language:JSON	object:snapshots.0.memory_dump.0
+size	debug_session_example.json	/^        "size": 2048,$/;"	n	language:JSON	object:project.source_files.0
+snapshots	debug_session_example.json	/^  "snapshots": [$/;"	a	language:JSON
+source_files	debug_session_example.json	/^    "source_files": [$/;"	a	language:JSON	object:project
+stackScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+stack_offset	debug_session_example.json	/^                  "stack_offset": 0,$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.0.location
+stack_offset	debug_session_example.json	/^                  "stack_offset": 0,$/;"	n	language:JSON	object:project.source_files.0.functions.0.local_variables.1.location
+stack_pointer	debug_session_example.json	/^          "stack_pointer": 0,$/;"	n	language:JSON	object:debug_events.0.execution_context.cpu_context
+stack_pointer	debug_session_example.json	/^          "stack_pointer": 0,$/;"	n	language:JSON	object:snapshots.0.execution_state.cpu_context
+startDebugSessionCommand	debug_session_integration.go	/^func startDebugSessionCommand(ctx *DebuggerContext, sessionName string) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext, sessionName string)
+startDrag	main.go	/^func startDrag(boundary string, x, y int, layout *DynamicLayout) {$/;"	f	language:Go	package:main	signature:(boundary string, x, y int, layout *DynamicLayout)
+startSearchHandler	main.go	/^func startSearchHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+startSearchMode	main.go	/^func startSearchMode(ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(ctx *DebuggerContext)
+start_address	debug_session_example.json	/^          "start_address": 0,$/;"	n	language:JSON	object:debug_events.0.memory_snapshots.0
+start_address	debug_session_example.json	/^          "start_address": 0,$/;"	n	language:JSON	object:snapshots.0.memory_dump.0
+start_line	debug_session_example.json	/^            "start_line": 25,$/;"	n	language:JSON	object:project.source_files.0.functions.0
+start_time	debug_session_example.json	/^  "start_time": "2024-12-08T14:30:25.123456Z",$/;"	s	language:JSON
+statistics	debug_session_example.json	/^  "statistics": {$/;"	o	language:JSON
+status	debug_session_example.json	/^          "status": "active",$/;"	s	language:JSON	object:snapshots.0.breakpoint_states.0
+status	debug_session_example.json	/^      "status": "active",$/;"	s	language:JSON	object:breakpoints.0
+status	debug_session_example.json	/^  "status": "ended",$/;"	s	language:JSON
+success	debug_session_example.json	/^        "success": true,$/;"	b	language:JSON	object:operations.0.result
+success	debug_session_example.json	/^        "success": true,$/;"	b	language:JSON	object:operations.1.result
+swap_total	debug_session_example.json	/^      "swap_total": 2147483648,$/;"	n	language:JSON	object:environment.memory_info
+swap_used	debug_session_example.json	/^      "swap_used": 0$/;"	n	language:JSON	object:environment.memory_info
+switchToCode	main.go	/^func switchToCode(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+switchToCommand	main.go	/^func switchToCommand(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+switchToFileBrowser	main.go	/^func switchToFileBrowser(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+switchToRegisters	main.go	/^func switchToRegisters(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+switchToStack	main.go	/^func switchToStack(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+switchToVariables	main.go	/^func switchToVariables(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+systemTapStatusCommand	systemtap_generator.go	/^func systemTapStatusCommand(ctx *DebuggerContext) []string {$/;"	f	language:Go	package:main	typeref:typename:[]string	signature:(ctx *DebuggerContext)
+system_calls	debug_session_example.json	/^        "system_calls": [$/;"	a	language:JSON	object:debug_events.0.performance_data
+system_time	debug_session_example.json	/^    "system_time": "2024-12-08T14:30:25.123456Z"$/;"	s	language:JSON	object:environment
+tags	debug_session_example.json	/^    "tags": ["kernel", "debugging", "systemtap", "bpf"],$/;"	a	language:JSON	object:metadata
+target_arch	debug_session_example.json	/^        "target_arch": "x86_64",$/;"	s	language:JSON	object:operations.1.parameters
+tgid	debug_session_example.json	/^        "tgid": 1234,$/;"	n	language:JSON	object:debug_events.0.process_info
+thread_id	debug_session_example.json	/^        "thread_id": 1234,$/;"	n	language:JSON	object:debug_events.0.execution_context
+thread_id	debug_session_example.json	/^        "thread_id": 1234,$/;"	n	language:JSON	object:snapshots.0.execution_state
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:31:15.000Z",$/;"	s	language:JSON	object:breakpoint_history.0
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:31:15.000Z",$/;"	s	language:JSON	object:operations.0
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:32:00.000Z",$/;"	s	language:JSON	object:operations.1
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:breakpoint_history.1
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:debug_events.0
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:snapshots.0
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:35:22.345Z",$/;"	s	language:JSON	object:variable_history.0
+timestamp	debug_session_example.json	/^      "timestamp": "2024-12-08T14:35:22.450Z",$/;"	s	language:JSON	object:variable_history.1
+toggleFullscreenHandler	main.go	/^func toggleFullscreenHandler(g *gocui.Gui, v *gocui.View) error {$/;"	f	language:Go	package:main	typeref:typename:error	signature:(g *gocui.Gui, v *gocui.View)
+total	debug_session_example.json	/^      "total": 17179869184,$/;"	n	language:JSON	object:environment.memory_info
+total_breakpoints	debug_session_example.json	/^    "total_breakpoints": 1,$/;"	n	language:JSON	object:statistics
+total_debug_events	debug_session_example.json	/^    "total_debug_events": 3,$/;"	n	language:JSON	object:statistics
+total_execution_time	debug_session_example.json	/^    "total_execution_time": 905665$/;"	n	language:JSON	object:statistics
+total_operations	debug_session_example.json	/^    "total_operations": 15,$/;"	n	language:JSON	object:statistics
+trigger_count	debug_session_example.json	/^          "trigger_count": 1,$/;"	n	language:JSON	object:snapshots.0.breakpoint_states.0
+trigger_count	debug_session_example.json	/^        "trigger_count": 1,$/;"	n	language:JSON	object:breakpoint_history.1.data
+trigger_count	debug_session_example.json	/^      "trigger_count": 3,$/;"	n	language:JSON	object:breakpoints.0
+triggered_breakpoints	debug_session_example.json	/^    "triggered_breakpoints": 1,$/;"	n	language:JSON	object:statistics
+type	debug_session_example.json	/^                  "type": "register",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0.location
+type	debug_session_example.json	/^                  "type": "register",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1.location
+type	debug_session_example.json	/^                "type": "int",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.0
+type	debug_session_example.json	/^                "type": "int",$/;"	s	language:JSON	object:project.source_files.0.functions.0.local_variables.1
+type	debug_session_example.json	/^                "type": "int",$/;"	s	language:JSON	object:project.source_files.0.functions.0.parameters.0
+type	debug_session_example.json	/^              "type": "int",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+type	debug_session_example.json	/^              "type": "int",$/;"	s	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+type	debug_session_example.json	/^              "type": "int",$/;"	s	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+type	debug_session_example.json	/^          "type": "int",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.0
+type	debug_session_example.json	/^          "type": "int",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.1
+type	debug_session_example.json	/^          "type": "int",$/;"	s	language:JSON	object:debug_events.0.variable_snapshots.2
+type	debug_session_example.json	/^          "type": "int",$/;"	s	language:JSON	object:snapshots.0.variable_states.0
+type	debug_session_example.json	/^          "type": "stack",$/;"	s	language:JSON	object:debug_events.0.memory_snapshots.0
+type	debug_session_example.json	/^          "type": "stack",$/;"	s	language:JSON	object:snapshots.0.memory_dump.0
+type	debug_session_example.json	/^      "type": "generate_bpf",$/;"	s	language:JSON	object:operations.1
+type	debug_session_example.json	/^      "type": "set_breakpoint",$/;"	s	language:JSON	object:operations.0
+updateAllViews	main.go	/^func updateAllViews(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateBreakpointsView	main.go	/^func updateBreakpointsView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateCodeView	main.go	/^func updateCodeView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateCommandView	main.go	/^func updateCommandView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateFileBrowserView	main.go	/^func updateFileBrowserView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateRegistersView	main.go	/^func updateRegistersView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateStackView	main.go	/^func updateStackView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateStatistics	debug_session_integration.go	/^func (dsm *DebugSessionManager) updateStatistics() {$/;"	f	language:Go	unknown:main.DebugSessionManager	signature:()
+updateStatusView	main.go	/^func updateStatusView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+updateVariablesView	main.go	/^func updateVariablesView(g *gocui.Gui, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(g *gocui.Gui, ctx *DebuggerContext)
+used	debug_session_example.json	/^      "used": 8589934592,$/;"	n	language:JSON	object:environment.memory_info
+user	debug_session_example.json	/^      "user": "rlk",$/;"	s	language:JSON	object:breakpoint_history.0
+user	debug_session_example.json	/^      "user": "rlk",$/;"	s	language:JSON	object:operations.0
+user	debug_session_example.json	/^      "user": "rlk",$/;"	s	language:JSON	object:operations.1
+user	debug_session_example.json	/^      "user": "system",$/;"	s	language:JSON	object:breakpoint_history.1
+username	debug_session_example.json	/^    "username": "rlk",$/;"	s	language:JSON	object:environment
+validate	debug_session_types.go	/^func (session *DebugSession) validate() {$/;"	f	language:Go	unknown:main.DebugSession	signature:()
+validateTimestamps	debug_session_types.go	/^func (session *DebugSession) validateTimestamps() {$/;"	f	language:Go	unknown:main.DebugSession	signature:()
+value	debug_session_example.json	/^              "value": 10,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.local_variables.0
+value	debug_session_example.json	/^              "value": 42,$/;"	n	language:JSON	object:debug_events.0.call_stack.0.arguments.0
+value	debug_session_example.json	/^              "value": 42,$/;"	n	language:JSON	object:snapshots.0.call_stack_dump.0.arguments.0
+value	debug_session_example.json	/^          "value": 0,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.1
+value	debug_session_example.json	/^          "value": 10,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.0
+value	debug_session_example.json	/^          "value": 10,$/;"	n	language:JSON	object:snapshots.0.variable_states.0
+value	debug_session_example.json	/^          "value": 42,$/;"	n	language:JSON	object:debug_events.0.variable_snapshots.2
+value_changed	debug_session_example.json	/^      "value_changed": true,$/;"	b	language:JSON	object:variable_history.0
+value_changed	debug_session_example.json	/^      "value_changed": true,$/;"	b	language:JSON	object:variable_history.1
+varScroll	main.go	/^	fileScroll, regScroll, varScroll, stackScroll, codeScroll, memScroll int$/;"	v	language:Go	package:main
+variable_history	debug_session_example.json	/^  "variable_history": [$/;"	a	language:JSON
+variable_name	debug_session_example.json	/^      "variable_name": "counter",$/;"	s	language:JSON	object:variable_history.0
+variable_name	debug_session_example.json	/^      "variable_name": "counter",$/;"	s	language:JSON	object:variable_history.1
+variable_snapshots	debug_session_example.json	/^      "variable_snapshots": [$/;"	a	language:JSON	object:debug_events.0
+variable_states	debug_session_example.json	/^      "variable_states": [$/;"	a	language:JSON	object:snapshots.0
+version	debug_session_example.json	/^    "version": "1.0",$/;"	s	language:JSON	object:metadata
+version	debug_session_example.json	/^    "version": "1.0.0",$/;"	s	language:JSON	object:project
+watched_variables	debug_session_example.json	/^          "watched_variables": ["local_var", "counter", "param"],$/;"	a	language:JSON	object:snapshots.0.breakpoint_states.0
+watched_variables	debug_session_example.json	/^      "watched_variables": ["local_var", "counter", "param"],$/;"	a	language:JSON	object:breakpoints.0
+working_directory	debug_session_example.json	/^        "working_directory": "\/home\/rlk\/xiafeng.luo\/MoneyProject\/kernel_driver_debug_tui",$/;"	s	language:JSON	object:debug_events.0.process_info
+working_directory	debug_session_example.json	/^    "working_directory": "\/home\/rlk\/xiafeng.luo\/MoneyProject\/kernel_driver_debug_tui",$/;"	s	language:JSON	object:environment
+writeBreakpointProbes	systemtap_generator.go	/^func writeBreakpointProbes(file *os.File, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(file *os.File, ctx *DebuggerContext)
+writeJSONSupport	systemtap_generator.go	/^func writeJSONSupport(file *os.File, outputFile string) {$/;"	f	language:Go	package:main	signature:(file *os.File, outputFile string)
+writeSystemTapFooter	systemtap_generator.go	/^func writeSystemTapFooter(file *os.File) {$/;"	f	language:Go	package:main	signature:(file *os.File)
+writeSystemTapHeader	systemtap_generator.go	/^func writeSystemTapHeader(file *os.File, ctx *DebuggerContext) {$/;"	f	language:Go	package:main	signature:(file *os.File, ctx *DebuggerContext)
+⌨️ 快捷键参考	README.md	/^## ⌨️ 快捷键参考$/;"	s	language:Markdown
+克隆项目	README.md	/^# 克隆项目$/;"	c	language:Markdown
+全局快捷键	README.md	/^### 全局快捷键$/;"	S	language:Markdown
+内核头文件	README.md	/^# 内核头文件$/;"	c	language:Markdown
+内核支持	README.md	/^### 内核支持$/;"	S	language:Markdown
+双击代码行设置断点	README.md	/^# 双击代码行设置断点$/;"	c	language:Markdown
+在调试器中执行以下命令序列：	README.md	/^# 在调试器中执行以下命令序列：$/;"	c	language:Markdown
+基本命令	README.md	/^### 基本命令$/;"	S	language:Markdown
+安装依赖	README.md	/^# 安装依赖$/;"	c	language:Markdown
+安装开发依赖	README.md	/^# 安装开发依赖$/;"	c	language:Markdown
+布局调整快捷键	README.md	/^### 布局调整快捷键$/;"	S	language:Markdown
+常见问题	README.md	/^### 常见问题$/;"	S	language:Markdown
+开发环境	README.md	/^### 开发环境$/;"	S	language:Markdown
+或者使用go run	README.md	/^# 或者使用go run$/;"	c	language:Markdown
+断点命令	README.md	/^### 断点命令$/;"	S	language:Markdown
+构建程序	README.md	/^# 构建程序$/;"	c	language:Markdown
+查看BPF程序状态	README.md	/^# 查看BPF程序状态$/;"	c	language:Markdown
+查看调试输出	README.md	/^# 查看调试输出$/;"	c	language:Markdown
+格式化代码	README.md	/^# 格式化代码$/;"	c	language:Markdown
+检查内核BPF支持	README.md	/^# 检查内核BPF支持$/;"	c	language:Markdown
+状态命令	README.md	/^### 状态命令$/;"	S	language:Markdown
+直接运行	README.md	/^# 直接运行$/;"	c	language:Markdown
+调试信息	README.md	/^### 调试信息$/;"	S	language:Markdown
+调试快捷键	README.md	/^### 调试快捷键$/;"	S	language:Markdown
+运行时依赖	README.md	/^### 运行时依赖$/;"	S	language:Markdown
+运行测试	README.md	/^# 运行测试$/;"	c	language:Markdown
+退出调试器，在终端中执行：	README.md	/^# 退出调试器，在终端中执行：$/;"	c	language:Markdown
+静态分析	README.md	/^# 静态分析$/;"	c	language:Markdown
+🎨 界面截图	README.md	/^## 🎨 界面截图$/;"	s	language:Markdown
+🎮 动态布局系统	README.md	/^### 🎮 动态布局系统$/;"	S	language:Markdown
+🎯 主要特性	README.md	/^## 🎯 主要特性$/;"	s	language:Markdown
+🏗️ eBPF 调试原理	README.md	/^## 🏗️ eBPF 调试原理$/;"	s	language:Markdown
+🏗️ 多窗口 TUI 界面	README.md	/^### 🏗️ 多窗口 TUI 界面$/;"	S	language:Markdown
+🐛 故障排除	README.md	/^## 🐛 故障排除$/;"	s	language:Markdown
+📁 项目管理	README.md	/^### 📁 项目管理$/;"	S	language:Markdown
+📄 许可证	README.md	/^## 📄 许可证$/;"	s	language:Markdown
+📝 命令参考	README.md	/^## 📝 命令参考$/;"	s	language:Markdown
+📞 联系方式	README.md	/^## 📞 联系方式$/;"	s	language:Markdown
+🔍 智能断点管理	README.md	/^### 🔍 智能断点管理$/;"	S	language:Markdown
+🔎 代码搜索功能	README.md	/^### 🔎 代码搜索功能$/;"	S	language:Markdown
+🔧 高级功能	README.md	/^## 🔧 高级功能$/;"	s	language:Markdown
+🖱️ 鼠标支持	README.md	/^### 🖱️ 鼠标支持$/;"	S	language:Markdown
+🚀 eBPF 集成	README.md	/^### 🚀 eBPF 集成$/;"	S	language:Markdown
+🚀 快速开始	README.md	/^## 🚀 快速开始$/;"	s	language:Markdown
+🛠️ 系统依赖	README.md	/^## 🛠️ 系统依赖$/;"	s	language:Markdown
+🤝 贡献指南	README.md	/^## 🤝 贡献指南$/;"	s	language:Markdown
