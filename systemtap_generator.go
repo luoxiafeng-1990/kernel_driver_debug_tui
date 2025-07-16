@@ -854,9 +854,4 @@ func setKernelPathCommand(ctx *DebuggerContext, args string) []string {
 	}
 }
 
-// 获取当前内核版本
-func getKernelVersion() string {
-	// 这里可以实现获取内核版本的逻辑
-	// 暂时返回一个占位符
-	return "$(uname -r)"
-}
+
